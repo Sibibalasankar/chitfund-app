@@ -14,7 +14,12 @@ import {
 import { Ionicons } from '@expo/vector-icons'; // 👁️ Eye icon
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from '../hooks/useForm';
-import { validatePhone, validatePassword, validateName, getPasswordStrength } from '../utils/validation';
+import {
+  validatePhone,
+  validatePassword,
+  validateName,
+  getPasswordStrength
+} from '../utils/validation';
 
 const RegisterScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +50,7 @@ const RegisterScreen = ({ navigation }) => {
 
     if (!values.confirmPassword) {
       errors.confirmPassword = 'Please confirm your password';
-    } else if (values.password !== values.confirmPassword) {
+    } else if (values.password && values.password !== values.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
 
@@ -82,8 +87,6 @@ const RegisterScreen = ({ navigation }) => {
       setIsLoading(false);
     }
   };
-
-
 
   const formatPhoneInput = (text) => {
     const cleaned = text.replace(/\D/g, '');
@@ -148,7 +151,7 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1, borderWidth: 0, backgroundColor: 'transparent' }]}
                 placeholder="Password"
                 value={values.password}
                 onChangeText={(value) => handleChange('password', value)}
@@ -191,7 +194,7 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1, borderWidth: 0, backgroundColor: 'transparent' }]}
                 placeholder="Confirm Password"
                 value={values.confirmPassword}
                 onChangeText={(value) => handleChange('confirmPassword', value)}
@@ -272,6 +275,10 @@ const styles = StyleSheet.create({
     height: 50,
     paddingHorizontal: 15,
     fontSize: 16,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
   },
   inputError: { borderColor: '#dc3545' },
   errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },

@@ -42,9 +42,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ============================
-// LOGIN (Admin + Participants)
-// ============================
 // LOGIN (Admin + Participants)
 router.post("/login", async (req, res) => {
   try {

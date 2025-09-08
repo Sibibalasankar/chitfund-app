@@ -25,19 +25,21 @@ import NotificationList from "../components/Admin/NotificationList";
 const AdminDashboard = ({ navigation }) => {
   const { logout } = useAuth();
   const {
-    users,
-    funds,
-    notifications,
-    isLoading,
-    addUser,
-    updateUser,
-    deleteUser,
-    fetchUsers,
-    fetchFunds,
-    fetchNotifications,
-    addFund,
-    updateFundStatus,
-  } = useData();
+  users,
+  funds,
+  notifications,
+  isLoading,
+  addUser,
+  updateUser,
+  deleteUser,
+  fetchUsers,
+  fetchFunds,
+  fetchNotifications,
+  addFund,
+  updateFund,
+  updateFundStatus,
+  deleteFund, // 👈 add this line
+} = useData();
 
   const [fundModalVisible, setFundModalVisible] = useState(false);
   const [fundFormData, setFundFormData] = useState({
@@ -46,6 +48,7 @@ const AdminDashboard = ({ navigation }) => {
     dueDate: "",
     status: "pending",
   });
+  const [editingFund, setEditingFund] = useState(null); // ✅ track edit mode
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -139,6 +142,70 @@ const AdminDashboard = ({ navigation }) => {
     }
   };
 
+  // --- Fund Handlers ---
+  const handleAddFund = () => {
+    setEditingFund(null);
+    setFundFormData({
+      participantId: "",
+      amount: 0,
+      dueDate: "",
+      status: "pending",
+    });
+    setFundModalVisible(true);
+  };
+
+  const handleEditFund = (fund) => {
+    setEditingFund(fund);
+    setFundFormData({
+      participantId: fund.participantId?._id || fund.participantId,
+      amount: fund.amount,
+      dueDate: fund.dueDate,
+      status: fund.status,
+    });
+    setFundModalVisible(true);
+  };
+
+  const handleSaveFund = async () => {
+    if (!fundFormData.participantId || fundFormData.amount <= 0 || !fundFormData.dueDate) {
+      return Alert.alert("Error", "Please fill all fields");
+    }
+    try {
+      if (editingFund) {
+        await updateFund(editingFund._id, fundFormData);
+        Alert.alert("Success", "Fund updated successfully");
+      } else {
+        await addFund(fundFormData);
+        Alert.alert("Success", "Fund added successfully");
+      }
+      setFundModalVisible(false);
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to save fund");
+    }
+  };
+// --- Fund Handlers ---
+const handleDeleteFund = (fundId, participantName) => {
+  Alert.alert(
+    "Delete Fund",
+    `Are you sure you want to delete ${participantName}'s fund?`,
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteFund(fundId); // make sure deleteFund exists in your DataContext
+            Alert.alert("Deleted", `Fund for ${participantName} has been removed`);
+            setFundModalVisible(false); // close modal after delete
+          } catch (err) {
+            Alert.alert("Error", err.message || "Failed to delete fund");
+          }
+        },
+      },
+    ]
+  );
+};
+
   // --- Logout ---
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -147,7 +214,7 @@ const AdminDashboard = ({ navigation }) => {
         text: "Logout",
         style: "destructive",
         onPress: () => {
-          logout(); // ✅ this alone is enough
+          logout();
         },
       },
     ]);
@@ -163,15 +230,7 @@ const AdminDashboard = ({ navigation }) => {
             funds={funds}
             notifications={notifications}
             onAddUser={handleAddUser}
-            onAddFund={() => {
-              setFundFormData({
-                participantId: "",
-                amount: 0,
-                dueDate: "",
-                status: "pending",
-              });
-              setFundModalVisible(true); // ✅ open FundForm from overview
-            }}
+            onAddFund={handleAddFund}
             refreshing={refreshing}
             onRefresh={handleRefresh}
             setActiveTab={setActiveTab}
@@ -212,15 +271,7 @@ const AdminDashboard = ({ navigation }) => {
           <View style={styles.tabContent}>
             <TouchableOpacity
               style={styles.gradientButton}
-              onPress={() => {
-                setFundFormData({
-                  participantId: "",
-                  amount: 0,
-                  dueDate: "",
-                  status: "pending",
-                });
-                setFundModalVisible(true);
-              }}
+              onPress={handleAddFund}
               activeOpacity={0.8}
             >
               <LinearGradient
@@ -241,14 +292,12 @@ const AdminDashboard = ({ navigation }) => {
               onUpdateStatus={async (id, status, participantName) => {
                 try {
                   await updateFundStatus(id, status);
-                  Alert.alert(
-                    "Success",
-                    `${participantName}'s fund marked as ${status}`
-                  );
+                  Alert.alert("Success", `${participantName}'s fund marked as ${status}`);
                 } catch (err) {
                   Alert.alert("Error", err.message || "Failed to update fund");
                 }
               }}
+              onEditFund={handleEditFund} // ✅ pass edit handler
             />
           </View>
         );
@@ -287,11 +336,7 @@ const AdminDashboard = ({ navigation }) => {
 
       <View style={styles.content}>{getActiveTabContent()}</View>
 
-      <AdminTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        notifications={notifications}
-      />
+      <AdminTabs activeTab={activeTab} setActiveTab={setActiveTab} notifications={notifications} />
 
       <UserForm
         visible={modalVisible}
@@ -301,31 +346,41 @@ const AdminDashboard = ({ navigation }) => {
         onSave={handleSaveUser}
       />
 
-      {/* ✅ FundForm is also rendered here so it works from Overview + Funds tab */}
       <FundForm
-        visible={fundModalVisible}
+        visible={fundModalVisible}                     // ✅ use correct state
         onClose={() => setFundModalVisible(false)}
-        users={users || []}
-        formData={fundFormData}
-        setFormData={setFundFormData}
-        onSave={async () => {
-          if (
-            !fundFormData.participantId ||
-            fundFormData.amount <= 0 ||
-            !fundFormData.dueDate
-          ) {
-            Alert.alert("Error", "Please fill all fields");
-            return;
-          }
-          try {
-            await addFund(fundFormData);
-            Alert.alert("Success", "Fund added successfully");
-            setFundModalVisible(false);
-          } catch (err) {
-            Alert.alert("Error", err.message || "Failed to add fund");
-          }
+        users={users}
+        formData={fundFormData}                        // ✅ use fundFormData
+        setFormData={setFundFormData}                  // ✅ use fundFormData setter
+        onSave={handleSaveFund}
+        onDelete={async () => {                        // ✅ delete handler
+          if (!editingFund) return;
+          Alert.alert(
+            "Delete Fund",
+            "Are you sure you want to delete this fund?",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    await deleteFund(editingFund._id);   // implement deleteFund in your DataContext
+                    Alert.alert("Deleted", "Fund has been removed");
+                    setFundModalVisible(false);
+                    setEditingFund(null);
+                  } catch (err) {
+                    Alert.alert("Error", err.message || "Failed to delete fund");
+                  }
+                },
+              },
+            ]
+          );
         }}
+        isEditing={!!editingFund}                      // ✅ edit mode flag
       />
+
+
     </SafeAreaView>
   );
 };
@@ -341,11 +396,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  title: {
-    fontSize: 20,
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  title: { fontSize: 20, color: "#fff", fontWeight: "bold" },
   content: { flex: 1 },
   tabContent: { flex: 1, padding: 16 },
   gradientButton: { marginBottom: 15, borderRadius: 10, overflow: "hidden" },
@@ -355,12 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 12,
   },
-  gradientButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    marginLeft: 8,
-    fontSize: 15,
-  },
+  gradientButtonText: { color: "#fff", fontWeight: "bold", marginLeft: 8, fontSize: 15 },
 });
 
 export default AdminDashboard;

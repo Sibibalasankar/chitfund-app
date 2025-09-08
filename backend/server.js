@@ -199,15 +199,33 @@ app.put("/api/funds/:id", async (req, res) => {
 
 app.delete("/api/funds/:id", async (req, res) => {
   try {
-    const fund = await Fund.findByIdAndDelete(req.params.id);
+    // Find the fund first
+    const fund = await Fund.findById(req.params.id).populate("participantId", "name phone");
     if (!fund) return res.status(404).json({ success: false, error: "Fund not found" });
 
-    await Notification.create({ type: "fund_deleted", message: `A fund record was deleted.` });
-    res.json({ success: true, message: "Fund deleted" });
+    // Store fund details for notification
+    const participantName = fund.participantId?.name || "Unknown Participant";
+    const participantPhone = fund.participantId?.phone || "N/A";
+    const amount = fund.amount;
+    const dueDate = fund.dueDate;
+    const status = fund.status;
+
+    // Delete the fund
+    await fund.deleteOne();
+
+    // Create a detailed notification
+    await Notification.create({
+      type: "fund_deleted",
+      message: `Fund deleted: Participant: ${participantName}, Amount: ₹${amount}, Due Date: ${dueDate}, Status: ${status}`,
+      relatedUser: fund.participantId?._id || null, // optional: link notification to participant
+    });
+
+    res.json({ success: true, message: "Fund deleted", fundId: fund._id });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 /* ===========================
    NOTIFICATION ROUTES

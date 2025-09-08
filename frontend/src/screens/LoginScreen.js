@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
     padding: 30,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
+    paddingTop:60,
     alignItems: 'center',
   },
   title: { fontSize: 32, fontWeight: 'bold', color: 'white', marginBottom: 10 },

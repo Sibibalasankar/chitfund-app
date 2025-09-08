@@ -110,6 +110,24 @@ export const DataProvider = ({ children }) => {
       throw err;
     }
   };
+// ---- Update Fund (amount, dueDate, etc.) ----
+const updateFund = async (id, updatedData) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/funds/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update fund");
+
+    setFunds((prev) => prev.map((f) => (f._id === id ? data.fund : f)));
+    return data.fund;
+  } catch (err) {
+    console.error("Update Fund Error:", err);
+    throw err;
+  }
+};
 
   // ---- Update Fund Status ----
   const updateFundStatus = async (id, status) => {
@@ -128,6 +146,19 @@ export const DataProvider = ({ children }) => {
       throw err;
     }
   };
+// ---- Delete Fund ----
+const deleteFund = async (id) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/funds/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to delete fund");
+
+    setFunds((prev) => prev.filter((f) => f._id !== id));
+  } catch (err) {
+    console.error("Delete Fund Error:", err);
+    throw err;
+  }
+};
 
   // ---- Fetch Notifications ----
 const fetchNotifications = async (phone = null) => {
@@ -193,23 +224,25 @@ useEffect(() => {
   if (user) fetchNotifications();  // 👈 only after login
 }, [user]);
 
-
-  const value = {
+const value = {
   users,
   funds,
   notifications,
   isLoading,
   fetchUsers,
   fetchFunds,
-  fetchNotifications,   // <-- make sure this is here
+  fetchNotifications,
   addUser,
   updateUser,
   deleteUser,
   addFund,
   updateFundStatus,
+  updateFund,
+  deleteFund, // ✅ add this
   markNotificationAsRead,
   markAllNotificationsAsRead,
 };
+
 
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

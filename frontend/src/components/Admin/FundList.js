@@ -3,10 +3,10 @@ import { View, Text, FlatList, TouchableOpacity, RefreshControl, StyleSheet } fr
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus }) => {
-  const [filterStatus, setFilterStatus] = useState('all'); 
-  const [sortOption, setSortOption] = useState('dueDate'); 
-  const [sortOrder, setSortOrder] = useState('asc'); 
+const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFund }) => {
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [sortOption, setSortOption] = useState('dueDate');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const displayedFunds = useMemo(() => {
     let filtered = [...funds];
@@ -23,26 +23,25 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus }) => {
   }, [funds, filterStatus, sortOption, sortOrder]);
 
   const renderFundItem = ({ item }) => (
-  <View style={styles.listItem}>
-    <View style={{ flex: 1 }}>
-      <View style={styles.fundHeader}>
-        <Text style={styles.itemTitle}>
-          {item.participantId?.name || "Unknown"}
-        </Text>
-        <View
-          style={[
-            styles.statusBadge,
-            item.status === "paid"
-              ? styles.paidBadge
-              : item.status === "pending"
-              ? styles.pendingBadge
-              : styles.overdueBadge,
-          ]}
-        >
-          <Text style={styles.statusText}>{item.status}</Text>
+    <View style={styles.listItem}>
+      <View style={{ flex: 1 }}>
+        <View style={styles.fundHeader}>
+          <Text style={styles.itemTitle}>
+            {item.participantId?.name || "Unknown"}
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              item.status === "paid"
+                ? styles.paidBadge
+                : item.status === "pending"
+                  ? styles.pendingBadge
+                  : styles.overdueBadge,
+            ]}
+          >
+            <Text style={styles.statusText}>{item.status}</Text>
+          </View>
         </View>
-      </View>
-
 
         <View style={styles.fundDetails}>
           <View style={styles.detailRow}>
@@ -69,16 +68,27 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus }) => {
             </View>
           )}
         </View>
-      </View>
 
-      {item.status === 'pending' && (
-        <TouchableOpacity onPress={() => onUpdateStatus(item._id || item.id, 'paid', item.participantName)}>
-          <LinearGradient colors={['#28a745', '#81c784']} style={styles.payButton}>
-            <Icon name="check" size={20} color="#fff" />
-            <Text style={styles.payButtonText}>Mark Paid</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      )}
+        {/* ✅ Buttons Row (Edit + Mark Paid) */}
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            onPress={() => onEditFund(item)}
+            style={styles.editButton}
+          >
+            <Icon name="edit" size={18} color="#fff" />
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+
+          {item.status === 'pending' && (
+            <TouchableOpacity onPress={() => onUpdateStatus(item._id || item.id, 'paid', item.participantName)}>
+              <LinearGradient colors={['#28a745', '#81c784']} style={styles.payButton}>
+                <Icon name="check" size={20} color="#fff" />
+                <Text style={styles.payButtonText}>Mark Paid</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
     </View>
   );
 
@@ -140,8 +150,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -159,6 +167,19 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   amount: { fontSize: 16, fontWeight: 'bold', color: '#333', marginLeft: 8 },
   detailText: { marginLeft: 8, fontSize: 14, color: '#666' },
+
+  buttonRow: { flexDirection: 'row', marginTop: 12, alignItems: 'center' },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007bff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  editButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 6 },
+
   payButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -167,6 +188,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   payButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 6 },
+
   filterSortBar: { paddingVertical: 8, marginBottom: 8, paddingLeft: 16, paddingRight: 8 },
   filterGroup: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 },
   sortGroup: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },

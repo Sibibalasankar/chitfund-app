@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Modal, 
-  ScrollView 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  Alert
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -17,8 +18,21 @@ const FundForm = ({
   formData,
   setFormData,
   onSave,
+  isEditing,    // 👈 edit mode flag
+  onDelete,     // 👈 new prop for deleting
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this fund?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: onDelete },
+      ]
+    );
+  };
 
   return (
     <Modal
@@ -29,7 +43,9 @@ const FundForm = ({
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add Fund / Transaction</Text>
+          <Text style={styles.modalTitle}>
+            {isEditing ? "Edit Fund / Transaction" : "Add Fund / Transaction"}
+          </Text>
 
           {/* Participant selection */}
           <Text style={styles.label}>Participant:</Text>
@@ -105,8 +121,15 @@ const FundForm = ({
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
+
+            {isEditing && (
+              <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleDelete}>
+                <Text style={styles.buttonText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={onSave}>
-              <Text style={styles.buttonText}>Save</Text>
+              <Text style={styles.buttonText}>{isEditing ? "Update" : "Save"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -201,6 +224,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   cancelButton: { backgroundColor: '#6c757d' },
+  deleteButton: { backgroundColor: '#dc3545' }, // red
   saveButton: { backgroundColor: '#28a745' },
   buttonText: { color: '#fff', fontWeight: 'bold' },
 });
