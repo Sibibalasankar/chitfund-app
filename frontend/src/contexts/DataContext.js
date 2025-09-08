@@ -130,15 +130,22 @@ export const DataProvider = ({ children }) => {
   };
 
   // ---- Fetch Notifications ----
-  const fetchNotifications = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/notifications`);
-      const data = await res.json();
-      setNotifications(data);
-    } catch (err) {
-      console.error("Fetch Notifications Error:", err);
-    }
-  };
+const fetchNotifications = async (phone = null) => {
+  try {
+    const url = phone
+      ? `${API_BASE_URL}/notifications/${phone}` // participant
+      : `${API_BASE_URL}/notifications`;        // admin
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch notifications");
+    const data = await res.json();
+    setNotifications(data);
+  } catch (err) {
+    console.error("Fetch Notifications Error:", err);
+  }
+};
+
+
 
 // ---- Mark Notification As Read (single) ----
 const markNotificationAsRead = async (id) => {
@@ -180,11 +187,12 @@ const markAllNotificationsAsRead = async () => {
 
 
   // ✅ Load all data on app start
-  useEffect(() => {
-    fetchUsers();
-    fetchFunds();
-    fetchNotifications();
-  }, []);
+useEffect(() => {
+  fetchUsers();
+  fetchFunds();
+  if (user) fetchNotifications();  // 👈 only after login
+}, [user]);
+
 
   const value = {
   users,

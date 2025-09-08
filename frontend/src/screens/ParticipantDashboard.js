@@ -1,56 +1,85 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
+  ScrollView
+} from "react-native";
+import { useAuth } from "../contexts/AuthContext";
+import { useData } from "../contexts/DataContext";
+import { Ionicons } from "@expo/vector-icons";
 
-// Mock data for demonstration
-const mockFunds = [
-  { id: 1, amount: 5000, status: 'paid', paymentDate: '2023-10-10', dueDate: '2023-10-05', adminNote: 'Payment received' },
-  { id: 2, amount: 3000, status: 'pending', paymentDate: null, dueDate: '2023-10-15', adminNote: 'Awaiting payment' },
-  { id: 3, amount: 2000, status: 'overdue', paymentDate: null, dueDate: '2023-10-01', adminNote: 'Please pay immediately' },
-];
-
-const mockNotifications = [
-  { id: 1, message: 'Payment of ₹5000 received', type: 'payment', createdAt: '2023-10-10 14:30', isRead: true },
-  { id: 2, message: 'Reminder: Payment of ₹3000 due on 2023-10-15', type: 'reminder', createdAt: '2023-10-12 10:15', isRead: false },
-  { id: 3, message: 'New fund added to your account', type: 'info', createdAt: '2023-10-05 09:45', isRead: true },
-];
-
-const ParticipantDashboard = ({ navigation }) => {
+const ParticipantDashboard = () => {
   const { user, logout } = useAuth();
-  const [funds, setFunds] = useState(mockFunds);
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const [activeTab, setActiveTab] = useState('overview');
+  const {
+    funds,
+    notifications,
+    fetchFunds,
+    fetchNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+  } = useData();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleLogout = () => {
-  logout();   // that's all
-};
+  const userFunds = funds.filter((f) => f.participantId._id === user._id);
 
+  // Compute dynamic totals
+  const totalPaid = userFunds
+    .filter((f) => f.status === "paid")
+    .reduce((sum, f) => sum + f.amount, 0);
 
-  const markNotificationAsRead = (notificationId) => {
-    setNotifications(notifications.map(notification =>
-      notification.id === notificationId
-        ? { ...notification, isRead: true }
-        : notification
-    ));
-  };
+  const pendingAmount = userFunds
+    .filter((f) => f.status === "pending" || f.status === "overdue")
+    .reduce((sum, f) => sum + f.amount, 0);
 
-  const markAllNotificationsAsRead = () => {
-    setNotifications(notifications.map(notification => ({
-      ...notification,
-      isRead: true
-    })));
-  };
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchFunds(), fetchNotifications()]);
+    setRefreshing(false);
+  }, []);
+  // Filter notifications only for this user
+  const userNotifications = notifications.filter(
+    (n) => n.userId === user._id // or n.phone === user.phone depending on your schema
+  );
 
   const renderFundItem = ({ item }) => (
-    <View style={[styles.listItem, item.status === 'overdue' && styles.overdueItem]}>
-      <View>
-        <Text style={styles.itemTitle}>Amount: ₹{item.amount}</Text>
-        <Text>Status: <Text style={styles[item.status]}>{item.status}</Text></Text>
-        <Text>Due Date: {item.dueDate}</Text>
-        {item.paymentDate && <Text>Payment Date: {item.paymentDate}</Text>}
-        {item.adminNote && <Text>Note: {item.adminNote}</Text>}
+    <View
+      style={[
+        styles.fundItem,
+        item.status === "overdue" && styles.overdueItem,
+        item.status === "paid" && styles.paidItem,
+        item.status === "pending" && styles.pendingItem,
+      ]}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={styles.fundTitle}>₹{item.amount.toLocaleString()}</Text>
+        <View style={styles.statusContainer}>
+          <View
+            style={[
+              styles.statusIndicator,
+              item.status === "paid" && styles.statusPaid,
+              item.status === "pending" && styles.statusPending,
+              item.status === "overdue" && styles.statusOverdue,
+            ]}
+          />
+          <Text style={styles[item.status]}>{item.status.toUpperCase()}</Text>
+        </View>
+        <Text style={styles.fundDate}>
+          Due: {new Date(item.dueDate).toLocaleDateString()}
+        </Text>
+        {item.paymentDate && (
+          <Text style={styles.fundDate}>
+            Paid: {new Date(item.paymentDate).toLocaleDateString()}
+          </Text>
+        )}
       </View>
-      {item.status === 'pending' && (
+      {item.status === "pending" && (
         <TouchableOpacity style={styles.payButton}>
           <Text style={styles.payButtonText}>Pay Now</Text>
         </TouchableOpacity>
@@ -60,293 +89,556 @@ const ParticipantDashboard = ({ navigation }) => {
 
   const renderNotificationItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}
-      onPress={() => markNotificationAsRead(item.id)}
+      style={[
+        styles.notificationItem,
+        !item.isRead && styles.unreadNotification,
+      ]}
+      onPress={() => markNotificationAsRead(item._id)}
     >
-      <Text style={styles.notificationMessage}>{item.message}</Text>
-      <Text style={styles.notificationTime}>{item.createdAt}</Text>
       {!item.isRead && <View style={styles.unreadIndicator} />}
+      <View style={styles.notificationContent}>
+        <Text style={styles.notificationMessage}>{item.message}</Text>
+        <Text style={styles.notificationTime}>
+          {new Date(item.createdAt).toLocaleString()}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Participant Dashboard</Text>
-      <Text style={styles.welcome}>Welcome, {user?.name}!</Text>
-
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
-          onPress={() => setActiveTab('overview')}
-        >
-          <Text style={styles.tabText}>Overview</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'funds' && styles.activeTab]}
-          onPress={() => setActiveTab('funds')}
-        >
-          <Text style={styles.tabText}>My Funds</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'notifications' && styles.activeTab]}
-          onPress={() => setActiveTab('notifications')}
-        >
-          <Text style={styles.tabText}>Notifications</Text>
+  // Overview content
+  const overviewContent = (
+    <View style={styles.overviewContainer}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Welcome back,</Text>
+          <Text style={styles.userName}>{user?.name}</Text>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+          <Ionicons name="log-out-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'overview' && (
-        <ScrollView>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Account Summary</Text>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {(funds || []).filter(f => f.status === 'paid').length}
-                </Text>
-                <Text style={styles.statLabel}>Paid</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {(funds || []).filter(f => f.status === 'paid').length}
-                </Text>
-                <Text style={styles.statLabel}>Paid</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {(funds || []).filter(f => f.status === 'paid').length}
-                </Text>
-                <Text style={styles.statLabel}>Paid</Text>
-              </View>
+      <View style={styles.summaryCards}>
+        <View style={[styles.summaryCard, { backgroundColor: "#4CAF50" }]}>
+          <Text style={styles.summaryAmount}>₹{totalPaid.toLocaleString()}</Text>
+          <Text style={styles.summaryLabel}>Total Paid</Text>
+        </View>
+        <View style={[styles.summaryCard, { backgroundColor: "#FF9800" }]}>
+          <Text style={styles.summaryAmount}>₹{pendingAmount.toLocaleString()}</Text>
+          <Text style={styles.summaryLabel}>Pending Amount</Text>
+        </View>
+      </View>
+
+      <View style={styles.statsSection}>
+        <Text style={styles.sectionTitle}>Account Summary</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <View style={[styles.statIcon, { backgroundColor: "#e0f7fa" }]}>
+              <Ionicons name="checkmark-done" size={20} color="#007bff" />
+            </View>
+            <Text style={styles.statNumber}>
+              {userFunds.filter((f) => f.status === "paid").length}
+            </Text>
+            <Text style={styles.statLabel}>Paid</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={[styles.statIcon, { backgroundColor: "#fff3e0" }]}>
+              <Ionicons name="time" size={20} color="#FF9800" />
+            </View>
+            <Text style={styles.statNumber}>
+              {userFunds.filter((f) => f.status === "pending").length}
+            </Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={[styles.statIcon, { backgroundColor: "#ffebee" }]}>
+              <Ionicons name="alert" size={20} color="#F44336" />
+            </View>
+            <Text style={styles.statNumber}>
+              {userFunds.filter((f) => f.status === "overdue").length}
+            </Text>
+            <Text style={styles.statLabel}>Overdue</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Recent Activity</Text>
+        {userFunds.slice(0, 3).map((f) => (
+          <View key={f._id} style={styles.activityItem}>
+            <View style={styles.activityDot} />
+            <View style={styles.activityContent}>
+              <Text style={styles.activityText}>
+                {f.status === "paid"
+                  ? `Payment of ₹${f.amount.toLocaleString()} completed`
+                  : `Fund of ₹${f.amount.toLocaleString()} due on ${new Date(
+                    f.dueDate
+                  ).toLocaleDateString()}`}
+              </Text>
+              <Text style={styles.activityTime}>
+                {new Date(f.updatedAt || f.createdAt).toLocaleDateString()}
+              </Text>
             </View>
           </View>
+        ))}
+        {userFunds.length === 0 && (
+          <Text style={styles.noDataText}>No recent activity</Text>
+        )}
+      </View>
+    </View>
+  );
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Recent Activity</Text>
-            <Text>• Payment of ₹5000 completed on Oct 10</Text>
-            <Text>• New fund of ₹3000 added - Due Oct 15</Text>
-            <Text>• Received payment reminder for ₹2000</Text>
-          </View>
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Profile Information</Text>
-            <Text>Name: {user?.name}</Text>
-            <Text>Email: {user?.email}</Text>
-            <Text>Phone: {user?.phone}</Text>
-            <Text>Member Since: {user?.joinedDate}</Text>
-          </View>
-        </ScrollView>
-      )}
-
-      {activeTab === 'funds' && (
+      {activeTab === "overview" && (
         <FlatList
-          data={funds}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderFundItem}
-          style={styles.list}
+          data={[]}
+          ListHeaderComponent={overviewContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
         />
       )}
 
-      {activeTab === 'notifications' && (
-        <View style={styles.flexContainer}>
-          <View style={styles.notificationsHeader}>
-            <Text style={styles.sectionTitle}>Notifications</Text>
-            <TouchableOpacity onPress={markAllNotificationsAsRead}>
-              <Text style={styles.markAllRead}>Mark all as read</Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={notifications}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderNotificationItem}
-            style={styles.list}
-          />
-        </View>
+      {activeTab === "funds" && (
+        <FlatList
+          data={userFunds}
+          keyExtractor={(item) => item._id}
+          renderItem={renderFundItem}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="wallet-outline" size={64} color="#ccc" />
+              <Text style={styles.emptyStateText}>No funds found</Text>
+            </View>
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={[
+            styles.fundsContainer,
+            userFunds.length === 0 && styles.emptyContainer
+          ]}
+          showsVerticalScrollIndicator={false}
+        />
       )}
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
-    </View>
+      {activeTab === "notifications" && (
+        <FlatList
+          data={userNotifications}
+          keyExtractor={(item) => item._id}
+          renderItem={renderNotificationItem}
+          ListHeaderComponent={
+            <View style={styles.notificationsHeader}>
+              <Text style={styles.sectionTitle}>Notifications</Text>
+              {userNotifications.length > 0 && (
+                <TouchableOpacity onPress={markAllNotificationsAsRead}>
+                  <Text style={styles.markAllRead}>Mark all read</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
+              <Text style={styles.emptyStateText}>No notifications</Text>
+            </View>
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={[
+            styles.notificationsContainer,
+            userNotifications.length === 0 && styles.emptyContainer,
+          ]}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
+
+      {/* Bottom Tabs */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "overview" && styles.activeTab]}
+          onPress={() => setActiveTab("overview")}
+        >
+          <Ionicons
+            name="home-outline"
+            size={24}
+            color={activeTab === "overview" ? "#007bff" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "overview" && styles.activeTabText,
+            ]}
+          >
+            Overview
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "funds" && styles.activeTab]}
+          onPress={() => setActiveTab("funds")}
+        >
+          <Ionicons
+            name="wallet-outline"
+            size={24}
+            color={activeTab === "funds" ? "#007bff" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "funds" && styles.activeTabText,
+            ]}
+          >
+            My Funds
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "notifications" && styles.activeTab]}
+          onPress={() => setActiveTab("notifications")}
+        >
+          <Ionicons
+            name="notifications-outline"
+            size={24}
+            color={activeTab === "notifications" ? "#007bff" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "notifications" && styles.activeTabText,
+            ]}
+          >
+            Notifications
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f8f9fa",
   },
-  flexContainer: {
-    flex: 1,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 10,
   },
-  title: {
+  greeting: {
+    fontSize: 16,
+    color: "#666",
+  },
+  userName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
-  welcome: {
-    fontSize: 18,
-    textAlign: 'center',
+  logoutButton: {
+    backgroundColor: "#F44336",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  overviewContainer: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  summaryCards: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 20,
-    color: '#666',
   },
-  tabContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  tab: {
+  summaryCard: {
     flex: 1,
-    padding: 15,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#007bff',
-  },
-  tabText: {
-    color: '#333',
-    fontWeight: 'bold',
-  },
-  card: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginHorizontal: 6,
+    padding: 20,
+    borderRadius: 16,
     elevation: 2,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007bff',
-  },
-  statLabel: {
-    color: '#666',
-  },
-  list: {
-    flex: 1,
-  },
-  listItem: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  overdueItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: 'red',
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  summaryAmount: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
     marginBottom: 5,
   },
-  paid: {
-    color: 'green',
-    fontWeight: 'bold',
+  summaryLabel: {
+    fontSize: 14,
+    color: "#fff",
+    opacity: 0.9,
   },
-  pending: {
-    color: 'orange',
-    fontWeight: 'bold',
-  },
-  overdue: {
-    color: 'red',
-    fontWeight: 'bold',
-  },
-  payButton: {
-    backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  payButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  notificationsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  statsSection: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
   },
-  markAllRead: {
-    color: '#007bff',
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  notificationItem: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-    position: 'relative',
+  statItem: {
+    alignItems: "center",
+    flex: 1,
   },
-  unreadNotification: {
-    backgroundColor: '#e3f2fd',
+  statIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
   },
-  notificationMessage: {
-    fontSize: 16,
-    marginBottom: 5,
+  statNumber: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
   },
-  notificationTime: {
+  statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
   },
-  unreadIndicator: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
+  card: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+  },
+  activityItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  activityDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#007bff',
+    backgroundColor: "#007bff",
+    marginRight: 12,
+    marginTop: 6,
   },
-  logoutButton: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: 'red',
-    borderRadius: 8,
-    alignItems: 'center',
+  activityContent: {
+    flex: 1,
   },
-  logoutButtonText: {
-    color: 'white',
+  activityText: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4,
+  },
+  activityTime: {
+    fontSize: 12,
+    color: "#666",
+  },
+  noDataText: {
+    textAlign: "center",
+    color: "#999",
+    fontStyle: "italic",
+    marginVertical: 10,
+  },
+  fundsContainer: {
+    paddingTop: 16,
+    paddingBottom: 80,
+  },
+  fundItem: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  paidItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#4CAF50",
+  },
+  pendingItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF9800",
+  },
+  overdueItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#F44336",
+  },
+  fundTitle: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginBottom: 8,
+    color: "#333",
+  },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  statusPaid: {
+    backgroundColor: "#4CAF50",
+  },
+  statusPending: {
+    backgroundColor: "#FF9800",
+  },
+  statusOverdue: {
+    backgroundColor: "#F44336",
+  },
+  paid: {
+    color: "#4CAF50",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  pending: {
+    color: "#FF9800",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  overdue: {
+    color: "#F44336",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  fundDate: {
+    fontSize: 12,
+    color: "#666",
+  },
+  payButton: {
+    backgroundColor: "#007bff",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  payButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  notificationsContainer: {
+    paddingTop: 16,
+    paddingBottom: 80,
+  },
+  notificationsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  markAllRead: {
+    color: "#007bff",
+    fontWeight: "600",
+  },
+  notificationItem: {
+    backgroundColor: "#fff",
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  unreadNotification: {
+    backgroundColor: "#f0f7ff",
+  },
+  notificationContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  notificationMessage: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4,
+  },
+  notificationTime: {
+    fontSize: 12,
+    color: "#666",
+  },
+  unreadIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#007bff",
+    marginTop: 6,
+  },
+  tabBar: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    backgroundColor: "#fff",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: 8,
+  },
+  tab: {
+    flex: 1,
+    padding: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeTab: {
+    // backgroundColor: "#f0f7ff",
+  },
+  tabText: {
+    color: "#666",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  activeTabText: {
+    color: "#007bff",
+    fontWeight: "600",
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    marginTop: 12,
+    color: "#999",
     fontSize: 16,
-    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
 });
 

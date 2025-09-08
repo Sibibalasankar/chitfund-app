@@ -1,22 +1,29 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import axios from "axios";
-
-const API_BASE_URL = "http://192.168.1.44:5000/api"; // ✅ your backend
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
-  const handleForgotPassword = async () => {
+  const handleResetPassword = async () => {
+    if (!phone || !newPassword) return Alert.alert("Error", "Enter phone number and new password");
+
     try {
-      const res = await axios.post(`${API_BASE_URL}/auth/forgot-password`, { phone });
-      setMessage(res.data.message); // "OTP sent"
-      // ✅ Navigate to reset screen with phone param
-      navigation.navigate("ResetPassword", { phone });
+      const response = await fetch("http://YOUR_BACKEND_URL/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, newPassword }),
+      });
+
+      const data = await response.json();
+      if (data.success === false || data.error) {
+        Alert.alert("Error", data.error || "Something went wrong");
+      } else {
+        Alert.alert("Success", "Password reset successful");
+        navigation.navigate("Login");
+      }
     } catch (err) {
-      console.error("Forgot password error:", err.message);
-      setMessage(err.response?.data?.error || "Error sending OTP");
+      Alert.alert("Error", err.message);
     }
   };
 
@@ -25,15 +32,21 @@ export default function ForgotPasswordScreen({ navigation }) {
       <Text style={styles.title}>Forgot Password</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter your phone"
+        placeholder="Phone number"
+        keyboardType="phone-pad"
         value={phone}
         onChangeText={setPhone}
-        keyboardType="phone-pad"
       />
-      <TouchableOpacity style={styles.button} onPress={handleForgotPassword}>
-        <Text style={styles.buttonText}>Send OTP</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="New Password"
+        secureTextEntry
+        value={newPassword}
+        onChangeText={setNewPassword}
+      />
+      <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
+        <Text style={styles.buttonText}>Reset Password</Text>
       </TouchableOpacity>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>
   );
 }
@@ -44,5 +57,4 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, padding: 10, marginBottom: 15, borderRadius: 8 },
   button: { backgroundColor: "#007bff", padding: 15, borderRadius: 8 },
   buttonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
-  message: { marginTop: 10, textAlign: "center", color: "green" },
 });

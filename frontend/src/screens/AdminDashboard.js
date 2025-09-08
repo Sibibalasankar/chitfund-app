@@ -147,11 +147,7 @@ const AdminDashboard = ({ navigation }) => {
         text: "Logout",
         style: "destructive",
         onPress: () => {
-          logout();
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "Login" }],
-          });
+          logout(); // ✅ this alone is enough
         },
       },
     ]);

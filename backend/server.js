@@ -4,7 +4,10 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 
 dotenv.config();
-
+// Add this right after dotenv.config()
+console.log("Environment variables loaded:");
+console.log("PORT:", process.env.PORT);
+console.log("MONGO_URI:", process.env.MONGO_URI ? "✓ Loaded (hidden for security)" : "✗ NOT LOADED");
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -41,12 +44,15 @@ const fundSchema = new mongoose.Schema({
 const Fund = mongoose.model("Fund", fundSchema);
 
 const notificationSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // 👈 link to participant
+  phone: { type: String }, // optional fallback
   type: { type: String, required: true },
   message: { type: String, required: true },
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 const Notification = mongoose.model("Notification", notificationSchema);
+
 
 // ✅ Import AuthUser for login credentials
 const AuthUser = require("./models/AuthUser");
@@ -161,10 +167,12 @@ app.post("/api/funds", async (req, res) => {
     await User.findByIdAndUpdate(participantId, { $inc: { pendingAmount: amount } });
     const user = await User.findById(participantId);
 
-    await Notification.create({
-      type: "fund_added",
-      message: `New fund of $${amount} added for ${user.name}.`,
-    });
+   await Notification.create({
+  userId: participantId,  // 👈 attach user
+  phone: user.phone,      // optional
+  type: "fund_added",
+  message: `New fund of $${amount} added for ${user.name}.`,
+});
 
     res.status(201).json({ success: true, fund });
   } catch (err) {
@@ -184,10 +192,13 @@ app.put("/api/funds/:id", async (req, res) => {
       });
 
       const user = await User.findById(fund.participantId);
-      await Notification.create({
-        type: "payment_received",
-        message: `Payment of $${fund.amount} received from ${user.name}.`,
-      });
+     await Notification.create({
+  userId: fund.participantId,
+  phone: user.phone,
+  type: "payment_received",
+  message: `Payment of $${fund.amount} received from ${user.name}.`,
+});
+
     }
 
     res.json({ success: true, fund });
@@ -195,6 +206,25 @@ app.put("/api/funds/:id", async (req, res) => {
     res.status(400).json({ success: false, error: err.message });
   }
 });
+app.get("/api/notifications/:phone", async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const notifications = await Notification.find({ phone }).sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+// Admin fetch all notifications
+app.get("/api/notifications", async (req, res) => {
+  try {
+    const notifications = await Notification.find().sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // Delete fund
 app.delete("/api/funds/:id", async (req, res) => {

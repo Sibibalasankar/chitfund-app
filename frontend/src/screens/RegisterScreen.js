@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Platform 
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // 👁️ Eye icon
 import { useAuth } from '../contexts/AuthContext';
@@ -24,41 +24,41 @@ const RegisterScreen = ({ navigation }) => {
 
   const validate = (values) => {
     const errors = {};
-    
+
     if (!values.name) {
       errors.name = 'Full name is required';
     } else if (!validateName(values.name)) {
       errors.name = 'Name must be at least 2 characters';
     }
-    
+
     if (!values.phone) {
       errors.phone = 'Mobile number is required';
     } else if (!validatePhone(values.phone)) {
       errors.phone = 'Please enter a valid 10-digit mobile number';
     }
-    
+
     if (!values.password) {
       errors.password = 'Password is required';
     } else if (!validatePassword(values.password)) {
       errors.password = 'Password must be at least 6 characters';
     }
-    
+
     if (!values.confirmPassword) {
       errors.confirmPassword = 'Please confirm your password';
     } else if (values.password !== values.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
-    
+
     return errors;
   };
 
   const { values, errors, touched, handleChange, handleBlur, validateForm } = useForm(
-    { 
-      name: '', 
-      phone: '', 
-      password: '', 
+    {
+      name: '',
+      phone: '',
+      password: '',
       confirmPassword: '',
-      role: 'participant' 
+      role: 'participant'
     },
     validate
   );
@@ -72,16 +72,18 @@ const RegisterScreen = ({ navigation }) => {
     try {
       await register(values);
       Alert.alert(
-        'Success', 
-        'Registration successful. You are now logged in.',
-        [{ text: 'OK', onPress: () => navigation.replace('ParticipantDashboard') }]
+        "Success",
+        "Registration successful. Please login to continue.",
+        [{ text: "OK", onPress: () => navigation.replace("Login") }]
       );
     } catch (error) {
-      Alert.alert('Registration Failed', error.message);
+      Alert.alert("Registration Failed", error.message);
     } finally {
       setIsLoading(false);
     }
   };
+
+
 
   const formatPhoneInput = (text) => {
     const cleaned = text.replace(/\D/g, '');
@@ -99,7 +101,7 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -109,7 +111,7 @@ const RegisterScreen = ({ navigation }) => {
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join the Chit Fund community</Text>
         </View>
-        
+
         <View style={styles.formContainer}>
           {/* Full Name */}
           <View style={styles.inputContainer}>
@@ -125,7 +127,7 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.errorText}>{errors.name}</Text>
             )}
           </View>
-          
+
           {/* Phone */}
           <View style={styles.inputContainer}>
             <TextInput
@@ -141,7 +143,7 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.errorText}>{errors.phone}</Text>
             )}
           </View>
-          
+
           {/* Password */}
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
@@ -155,24 +157,24 @@ const RegisterScreen = ({ navigation }) => {
                 autoCapitalize="none"
               />
               <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
-                <Ionicons 
-                  name={showPassword ? 'eye-off' : 'eye'} 
-                  size={22} 
-                  color="#007bff" 
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={22}
+                  color="#007bff"
                 />
               </TouchableOpacity>
             </View>
             {values.password.length > 0 && (
               <View style={styles.passwordStrengthContainer}>
                 <View style={styles.passwordStrengthBar}>
-                  <View 
+                  <View
                     style={[
-                      styles.passwordStrengthFill, 
-                      { 
+                      styles.passwordStrengthFill,
+                      {
                         width: `${(passwordStrength.strength / 5) * 100}%`,
                         backgroundColor: getPasswordStrengthColor()
                       }
-                    ]} 
+                    ]}
                   />
                 </View>
                 <Text style={[styles.passwordStrengthText, { color: getPasswordStrengthColor() }]}>
@@ -184,7 +186,7 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.errorText}>{errors.password}</Text>
             )}
           </View>
-          
+
           {/* Confirm Password */}
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
@@ -198,10 +200,10 @@ const RegisterScreen = ({ navigation }) => {
                 autoCapitalize="none"
               />
               <TouchableOpacity onPress={() => setShowConfirmPassword((prev) => !prev)}>
-                <Ionicons 
-                  name={showConfirmPassword ? 'eye-off' : 'eye'} 
-                  size={22} 
-                  color="#007bff" 
+                <Ionicons
+                  name={showConfirmPassword ? 'eye-off' : 'eye'}
+                  size={22}
+                  color="#007bff"
                 />
               </TouchableOpacity>
             </View>
@@ -209,10 +211,10 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.errorText}>{errors.confirmPassword}</Text>
             )}
           </View>
-          
+
           {/* Register Button */}
-          <TouchableOpacity 
-            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
             onPress={handleRegister}
             disabled={isLoading}
           >
@@ -222,14 +224,14 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.registerButtonText}>Create Account</Text>
             )}
           </TouchableOpacity>
-          
+
           <View style={styles.termsContainer}>
             <Text style={styles.termsText}>
               By creating an account, you agree to our Terms of Service and Privacy Policy
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.loginSection}>
           <Text style={styles.loginText}>Already have an account?</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>

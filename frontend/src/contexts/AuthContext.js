@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  // --- Login (works for Admin & User)
+  // --- Login (Admin & Participant)
   const login = async (phone, password) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/login`, { phone, password });
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
       await SecureStore.setItemAsync("userToken", token);
       await SecureStore.setItemAsync("userData", JSON.stringify(user));
 
-      return user; // <-- contains role (admin or participant)
+      return user; // contains role (admin or participant)
     } catch (error) {
       const message = error.response?.data?.error || "Login failed";
       setAuthError(message);
@@ -51,19 +51,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- Register (Users only, Admins must be seeded in DB)
+  // --- Register (Participants only)
   const register = async (userData) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/register`, userData);
-      const { user, token } = res.data;
-
-      setUser(user);
-      setToken(token);
-
-      await SecureStore.setItemAsync("userToken", token);
-      await SecureStore.setItemAsync("userData", JSON.stringify(user));
-
-      return user;
+      return res.data.message; // backend only returns success message
     } catch (error) {
       const message = error.response?.data?.error || "Registration failed";
       setAuthError(message);
@@ -71,23 +63,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- Forgot Password (Users only)
+  // --- Forgot Password (Participants only)
   const forgotPassword = async (phone) => {
     try {
-      return await axios.post(`${API_BASE_URL}/forgot-password`, { phone });
+      const res = await axios.post(`${API_BASE_URL}/forgot-password`, { phone });
+      return res.data.message;
     } catch (error) {
-      throw new Error(error.response?.data?.error || "Failed to send OTP");
+      throw new Error(error.response?.data?.error || "Failed to process request");
     }
   };
 
-  // --- Reset Password (Users only)
-  const resetPassword = async (phone, otp, newPassword) => {
+  // --- Reset Password (Participants only)
+  const resetPassword = async (phone, newPassword) => {
     try {
-      return await axios.post(`${API_BASE_URL}/reset-password`, {
+      const res = await axios.post(`${API_BASE_URL}/reset-password`, {
         phone,
-        otp,
         newPassword,
       });
+      return res.data.message;
     } catch (error) {
       throw new Error(error.response?.data?.error || "Failed to reset password");
     }
