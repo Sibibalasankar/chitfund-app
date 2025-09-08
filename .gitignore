@@ -1,4 +1,1 @@
-".env" 
-"# Add other environment files if needed" 
-"*.env.local" 
-"*.env.*.local" 
+"node_modules/" 
