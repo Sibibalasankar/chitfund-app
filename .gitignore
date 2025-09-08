@@ -13,3 +13,6 @@ frontend/.env.local
 # General
 .DS_Store
 Thumbs.db
+frontend/node_modules/
+frontend/package-lock.json
+frontend/.expo/
