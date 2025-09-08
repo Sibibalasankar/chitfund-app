@@ -13,7 +13,7 @@ export const DataProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // ✅ Use your backend IP
-  const API_BASE_URL = "http://192.168.1.44:5000/api";
+  const API_BASE_URL = "https://chitfund-app-4b4s.onrender.com/api";
 
   // ---- Fetch Users ----
   const fetchUsers = async () => {

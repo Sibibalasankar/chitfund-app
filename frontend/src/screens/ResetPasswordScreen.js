@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import axios from "axios";
 
-const API_BASE = "http://192.168.1.44:5000/api";
+const API_BASE = "https://chitfund-app-4b4s.onrender.com/api";
 
 export default function ResetPasswordScreen({ route, navigation }) {
   const { phone } = route.params; // Only phone needed

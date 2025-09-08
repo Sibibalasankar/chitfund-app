@@ -8,7 +8,7 @@ const AdminTabs = ({ activeTab, setActiveTab, notifications }) => {
   const [isFundFormVisible, setFundFormVisible] = useState(false);
 
   // ✅ Use same API base URL as DataContext
-  const API_BASE_URL = "http://192.168.1.44:5000/api";
+  const API_BASE_URL = "https://chitfund-app-4b4s.onrender.com/api";
 
   const tabs = [
     {

@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 
 const AuthContext = createContext();
-const API_BASE_URL = "http://192.168.1.44:5000/api/auth"; // change to your backend IP
+const API_BASE_URL = "https://chitfund-app-4b4s.onrender.com/api/auth"; // change to your backend IP
 
 export const useAuth = () => useContext(AuthContext);
 
