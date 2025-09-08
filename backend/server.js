@@ -4,20 +4,29 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 
 dotenv.config();
-// Add this right after dotenv.config()
+
+// Debug env check
 console.log("Environment variables loaded:");
 console.log("PORT:", process.env.PORT);
-console.log("MONGO_URI:", process.env.MONGO_URI ? "✓ Loaded (hidden for security)" : "✗ NOT LOADED");
+console.log("MONGO_URI:", process.env.MONGO_URI ? "✓ Loaded" : "✗ NOT LOADED");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===========================
-// MongoDB connection
-// ===========================
+/* ===========================
+   MONGODB CONNECTION
+=========================== */
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
+
+/* ===========================
+   HEALTH CHECK ROUTE (Render)
+=========================== */
+app.get("/", (req, res) => {
+  res.send("✅ Chitfund Backend is running");
+});
 
 /* ===========================
    MODELS
@@ -44,8 +53,8 @@ const fundSchema = new mongoose.Schema({
 const Fund = mongoose.model("Fund", fundSchema);
 
 const notificationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // 👈 link to participant
-  phone: { type: String }, // optional fallback
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  phone: { type: String },
   type: { type: String, required: true },
   message: { type: String, required: true },
   isRead: { type: Boolean, default: false },
@@ -53,15 +62,12 @@ const notificationSchema = new mongoose.Schema({
 });
 const Notification = mongoose.model("Notification", notificationSchema);
 
-
 // ✅ Import AuthUser for login credentials
 const AuthUser = require("./models/AuthUser");
 
 /* ===========================
    USER ROUTES
 =========================== */
-
-// Get all users
 app.get("/api/users", async (req, res) => {
   try {
     const users = await User.find().sort({ joinedDate: -1 });
@@ -71,23 +77,18 @@ app.get("/api/users", async (req, res) => {
   }
 });
 
-// Add user (admin action)
-// Add user (admin action)
 app.post("/api/users", async (req, res) => {
   try {
     const { name, phone, role } = req.body;
 
-    // ⚠️ Check if already exists in profile collection
     const existingUser = await User.findOne({ phone });
     if (existingUser) {
-      return res.status(400).json({ success: false, error: "User already exists in profile" });
+      return res.status(400).json({ success: false, error: "User already exists" });
     }
 
-    // ✅ Only create profile (no AuthUser / no password)
     const user = new User({ name, phone, role: role || "participant" });
     await user.save();
 
-    // ✅ Add notification
     await Notification.create({
       type: "user_added",
       message: `${user.name} has been added by admin.`,
@@ -99,19 +100,15 @@ app.post("/api/users", async (req, res) => {
   }
 });
 
-// Update user (sync AuthUser too)
 app.put("/api/users/:id", async (req, res) => {
   try {
     const { name, phone, role, password } = req.body;
-
-    // Update profile in User
     const user = await User.findByIdAndUpdate(req.params.id, { name, phone, role }, { new: true });
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
-    // Update credentials in AuthUser
     const authUser = await AuthUser.findOne({ phone: user.phone });
     if (authUser) {
-      if (password) authUser.password = password; // triggers bcrypt pre-save
+      if (password) authUser.password = password;
       if (phone) authUser.phone = phone;
       if (role) authUser.role = role;
       await authUser.save();
@@ -123,18 +120,16 @@ app.put("/api/users/:id", async (req, res) => {
   }
 });
 
-// Delete user
 app.delete("/api/users/:id", async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
-    // Remove login credentials too
     await AuthUser.findOneAndDelete({ phone: user.phone });
 
     await Notification.create({
       type: "user_deleted",
-      message: `${user.name} has been removed from the group.`,
+      message: `${user.name} has been removed.`,
     });
 
     res.json({ success: true, message: "User deleted" });
@@ -146,8 +141,6 @@ app.delete("/api/users/:id", async (req, res) => {
 /* ===========================
    FUND ROUTES
 =========================== */
-
-// Get all funds
 app.get("/api/funds", async (req, res) => {
   try {
     const funds = await Fund.find().populate("participantId", "name phone");
@@ -157,7 +150,6 @@ app.get("/api/funds", async (req, res) => {
   }
 });
 
-// Add fund
 app.post("/api/funds", async (req, res) => {
   try {
     const { participantId, amount, dueDate } = req.body;
@@ -167,12 +159,12 @@ app.post("/api/funds", async (req, res) => {
     await User.findByIdAndUpdate(participantId, { $inc: { pendingAmount: amount } });
     const user = await User.findById(participantId);
 
-   await Notification.create({
-  userId: participantId,  // 👈 attach user
-  phone: user.phone,      // optional
-  type: "fund_added",
-  message: `New fund of $${amount} added for ${user.name}.`,
-});
+    await Notification.create({
+      userId: participantId,
+      phone: user.phone,
+      type: "fund_added",
+      message: `New fund of $${amount} added for ${user.name}.`,
+    });
 
     res.status(201).json({ success: true, fund });
   } catch (err) {
@@ -180,7 +172,6 @@ app.post("/api/funds", async (req, res) => {
   }
 });
 
-// Update fund
 app.put("/api/funds/:id", async (req, res) => {
   try {
     const fund = await Fund.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -192,13 +183,12 @@ app.put("/api/funds/:id", async (req, res) => {
       });
 
       const user = await User.findById(fund.participantId);
-     await Notification.create({
-  userId: fund.participantId,
-  phone: user.phone,
-  type: "payment_received",
-  message: `Payment of $${fund.amount} received from ${user.name}.`,
-});
-
+      await Notification.create({
+        userId: fund.participantId,
+        phone: user.phone,
+        type: "payment_received",
+        message: `Payment of $${fund.amount} received from ${user.name}.`,
+      });
     }
 
     res.json({ success: true, fund });
@@ -206,27 +196,7 @@ app.put("/api/funds/:id", async (req, res) => {
     res.status(400).json({ success: false, error: err.message });
   }
 });
-app.get("/api/notifications/:phone", async (req, res) => {
-  try {
-    const { phone } = req.params;
-    const notifications = await Notification.find({ phone }).sort({ createdAt: -1 });
-    res.json(notifications);
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-// Admin fetch all notifications
-app.get("/api/notifications", async (req, res) => {
-  try {
-    const notifications = await Notification.find().sort({ createdAt: -1 });
-    res.json(notifications);
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
 
-
-// Delete fund
 app.delete("/api/funds/:id", async (req, res) => {
   try {
     const fund = await Fund.findByIdAndDelete(req.params.id);
@@ -242,8 +212,16 @@ app.delete("/api/funds/:id", async (req, res) => {
 /* ===========================
    NOTIFICATION ROUTES
 =========================== */
+app.get("/api/notifications/:phone", async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const notifications = await Notification.find({ phone }).sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
-// Get all notifications
 app.get("/api/notifications", async (req, res) => {
   try {
     const notifications = await Notification.find().sort({ createdAt: -1 });
@@ -253,7 +231,6 @@ app.get("/api/notifications", async (req, res) => {
   }
 });
 
-// Mark as read
 app.put("/api/notifications/:id/read", async (req, res) => {
   try {
     const notification = await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true });
@@ -264,7 +241,6 @@ app.put("/api/notifications/:id/read", async (req, res) => {
   }
 });
 
-// Delete notification
 app.delete("/api/notifications/:id", async (req, res) => {
   try {
     const notification = await Notification.findByIdAndDelete(req.params.id);
@@ -275,7 +251,6 @@ app.delete("/api/notifications/:id", async (req, res) => {
   }
 });
 
-// Mark ALL as read
 app.put("/api/notifications/mark-all-read", async (req, res) => {
   try {
     await Notification.updateMany({ isRead: false }, { isRead: true });
@@ -295,4 +270,4 @@ app.use("/api/auth", authRoutes);
    START SERVER
 =========================== */
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
