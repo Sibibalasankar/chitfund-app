@@ -215,10 +215,13 @@ app.delete("/api/funds/:id", async (req, res) => {
 
     // Create a detailed notification
     await Notification.create({
-      type: "fund_deleted",
-      message: `Fund deleted: Participant: ${participantName}, Amount: ₹${amount}, Due Date: ${dueDate}, Status: ${status}`,
-      relatedUser: fund.participantId?._id || null, // optional: link notification to participant
-    });
+  userId: fund.participantId?._id || null, // link to participant
+  phone: participantPhone,
+  type: "fund_deleted",
+  message: `Fund deleted: Participant: ${participantName}, Amount: ₹${amount}, Due Date: ${dueDate}, Status: ${status}`,
+  isRead: false, // mark as unread
+});
+
 
     res.json({ success: true, message: "Fund deleted", fundId: fund._id });
   } catch (err) {
