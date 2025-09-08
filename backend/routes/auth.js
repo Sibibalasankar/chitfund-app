@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 const AuthUser = require("../models/AuthUser");   // 🔹 Participants login/register
 const User = require("../models/User");           // 🔹 Profile data
 const AdminUser = require("../models/AdminUser"); // 🔹 Admins login
-const admin = require("../firebaseAdmin");        // 🔹 Firebase Admin SDK
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "secret123";
