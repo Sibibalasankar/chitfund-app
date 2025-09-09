@@ -11,24 +11,10 @@ const AdminTabs = ({ activeTab, setActiveTab, notifications }) => {
   const API_BASE_URL = "https://chitfund-app-4b4s.onrender.com/api";
 
   const tabs = [
-    {
-      key: "overview",
-      icon: "dashboard",
-      label: "Overview",
-      iconSize: 24,
-    },
-    {
-      key: "users",
-      icon: "people",
-      label: "Users",
-      iconSize: 24,
-    },
-    {
-      key: "funds",
-      icon: "account-balance",
-      label: "Funds",
-      iconSize: 24,
-    },
+    { key: "overview", icon: "dashboard", label: "Overview", iconSize: 24 },
+    { key: "users", icon: "people", label: "Users", iconSize: 24 },
+    { key: "funds", icon: "account-balance", label: "Funds", iconSize: 24 },
+    { key: "loans", icon: "attach-money", label: "Loans", iconSize: 24 }, // <-- Added Loans tab
     {
       key: "notifications",
       icon: "notifications",
@@ -37,9 +23,11 @@ const AdminTabs = ({ activeTab, setActiveTab, notifications }) => {
       badge: (notifications || []).filter((n) => !n.isRead).length,
     },
   ];
-const handleAddFund = () => {
-  setFundFormVisible(true);
-};
+
+  const handleAddFund = () => {
+    setFundFormVisible(true);
+  };
+
   return (
     <View style={styles.tabContainer}>
       {tabs.map((tab) => (
@@ -97,10 +85,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 5,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 5,

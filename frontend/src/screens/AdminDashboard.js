@@ -21,12 +21,16 @@ import UserForm from "../components/Admin/UserForm";
 import FundList from "../components/Admin/FundList";
 import FundForm from "../components/Admin/FundForm";
 import NotificationList from "../components/Admin/NotificationList";
+import LoanForm from "../components/Admin/LoanForm";
+import LoanList from "../components/Admin/LoanList"; 
+
 
 const AdminDashboard = ({ navigation }) => {
   const { logout } = useAuth();
-  const {
+ const {
   users,
   funds,
+  loans,       // add this
   notifications,
   isLoading,
   addUser,
@@ -38,8 +42,13 @@ const AdminDashboard = ({ navigation }) => {
   addFund,
   updateFund,
   updateFundStatus,
-  deleteFund, // 👈 add this line
+  deleteFund,
+  addLoan,     // add this
+  updateLoan,  // add this
+  updateLoanStatus, // add this
+  deleteLoan,  // add this
 } = useData();
+
 
   const [fundModalVisible, setFundModalVisible] = useState(false);
   const [fundFormData, setFundFormData] = useState({
@@ -49,6 +58,9 @@ const AdminDashboard = ({ navigation }) => {
     status: "pending",
   });
   const [editingFund, setEditingFund] = useState(null); // ✅ track edit mode
+  const [loanModalVisible, setLoanModalVisible] = useState(false);
+  const [loanFormData, setLoanFormData] = useState({ participantId: "", amount: 0, status: "pending" });
+  const [editingLoan, setEditingLoan] = useState(null);
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -182,29 +194,82 @@ const AdminDashboard = ({ navigation }) => {
       Alert.alert("Error", err.message || "Failed to save fund");
     }
   };
-// --- Fund Handlers ---
-const handleDeleteFund = (fundId, participantName) => {
-  Alert.alert(
-    "Delete Fund",
-    `Are you sure you want to delete ${participantName}'s fund?`,
-    [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteFund(fundId); // make sure deleteFund exists in your DataContext
-            Alert.alert("Deleted", `Fund for ${participantName} has been removed`);
-            setFundModalVisible(false); // close modal after delete
-          } catch (err) {
-            Alert.alert("Error", err.message || "Failed to delete fund");
-          }
+  // --- Fund Handlers ---
+  const handleDeleteFund = (fundId, participantName) => {
+    Alert.alert(
+      "Delete Fund",
+      `Are you sure you want to delete ${participantName}'s fund?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteFund(fundId); // make sure deleteFund exists in your DataContext
+              Alert.alert("Deleted", `Fund for ${participantName} has been removed`);
+              setFundModalVisible(false); // close modal after delete
+            } catch (err) {
+              Alert.alert("Error", err.message || "Failed to delete fund");
+            }
+          },
         },
-      },
-    ]
-  );
-};
+      ]
+    );
+  };
+
+  const handleAddLoan = () => {
+    setEditingLoan(null);
+    setLoanFormData({ participantId: "", amount: 0, status: "pending" });
+    setLoanModalVisible(true);
+  };
+
+  const handleEditLoan = (loan) => {
+    setEditingLoan(loan);
+    setLoanFormData({
+      participantId: loan.participantId?._id || loan.participantId,
+      amount: loan.amount,
+      status: loan.status,
+    });
+    setLoanModalVisible(true);
+  };
+
+  const handleSaveLoan = async () => {
+    if (!loanFormData.participantId || loanFormData.amount <= 0) {
+      return Alert.alert("Error", "Please fill all fields");
+    }
+    try {
+      if (editingLoan) await updateLoan(editingLoan._id, loanFormData);
+      else await addLoan(loanFormData);
+      setLoanModalVisible(false);
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to save loan");
+    }
+  };
+
+  const handleDeleteLoan = (loanId, participantName) => {
+    Alert.alert(
+      "Delete Loan",
+      `Are you sure you want to delete ${participantName}'s loan?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteLoan(loanId);
+              Alert.alert("Deleted", `Loan for ${participantName} has been removed`);
+              setLoanModalVisible(false);
+              setEditingLoan(null);
+            } catch (err) {
+              Alert.alert("Error", err.message || "Failed to delete loan");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // --- Logout ---
   const handleLogout = () => {
@@ -301,6 +366,32 @@ const handleDeleteFund = (fundId, participantName) => {
             />
           </View>
         );
+      case "loans":
+        return (
+          <View style={styles.tabContent}>
+            <TouchableOpacity style={styles.gradientButton} onPress={handleAddLoan} activeOpacity={0.8}>
+              <LinearGradient colors={["#17a2b8", "#6fc2d0"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.gradientInner}>
+                <Icon name="add-circle" size={20} color="#fff" />
+                <Text style={styles.gradientButtonText}>Add Loan</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <LoanList
+              loans={loans || []}
+              onEditLoan={handleEditLoan}
+              onDeleteLoan={handleDeleteLoan}
+              onUpdateStatus={async (id, status, participantName) => {
+                try {
+                  await updateLoanStatus(id, status);
+                  Alert.alert("Success", `${participantName}'s loan marked as ${status}`);
+                } catch (err) {
+                  Alert.alert("Error", err.message || "Failed to update loan");
+                }
+              }}
+            />
+          </View>
+        );
+
 
       case "notifications":
         return (
@@ -344,6 +435,19 @@ const handleDeleteFund = (fundId, participantName) => {
         formData={formData}
         setFormData={setFormData}
         onSave={handleSaveUser}
+      />
+      <LoanForm
+        visible={loanModalVisible}
+        onClose={() => setLoanModalVisible(false)}
+        users={users}
+        formData={loanFormData}
+        setFormData={setLoanFormData}
+        onSave={handleSaveLoan}
+        onDelete={async () => {
+          if (!editingLoan) return;
+          handleDeleteLoan(editingLoan._id, editingLoan.participantId?.name);
+        }}
+        isEditing={!!editingLoan}
       />
 
       <FundForm

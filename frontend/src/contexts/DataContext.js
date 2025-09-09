@@ -11,7 +11,8 @@ export const DataProvider = ({ children }) => {
   const [funds, setFunds] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
+  // ---- Loans ----
+  const [loans, setLoans] = useState([]);
   // ✅ Use your backend IP
   const API_BASE_URL = "https://chitfund-app-4b4s.onrender.com/api";
 
@@ -217,6 +218,84 @@ const markAllNotificationsAsRead = async () => {
 };
 
 
+// Fetch Loans
+const fetchLoans = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/loans`);
+    const data = await res.json();
+    setLoans(data);
+  } catch (err) {
+    console.error("Fetch Loans Error:", err);
+  }
+};
+
+// Add Loan
+const addLoan = async (loanData) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/loans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(loanData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to add loan");
+    setLoans((prev) => [...prev, data.loan]);
+    return data.loan;
+  } catch (err) {
+    console.error("Add Loan Error:", err);
+    throw err;
+  }
+};
+
+// Update Loan
+const updateLoan = async (id, updatedData) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/loans/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update loan");
+    setLoans((prev) => prev.map((l) => (l._id === id ? data.loan : l)));
+    return data.loan;
+  } catch (err) {
+    console.error("Update Loan Error:", err);
+    throw err;
+  }
+};
+
+// Update Loan Status
+const updateLoanStatus = async (id, status) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/loans/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update loan status");
+    setLoans((prev) => prev.map((l) => (l._id === id ? data.loan : l)));
+  } catch (err) {
+    console.error("Update Loan Status Error:", err);
+    throw err;
+  }
+};
+
+// Delete Loan
+const deleteLoan = async (id) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/loans/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to delete loan");
+    setLoans((prev) => prev.filter((l) => l._id !== id));
+  } catch (err) {
+    console.error("Delete Loan Error:", err);
+    throw err;
+  }
+};
+
+
   // ✅ Load all data on app start
 useEffect(() => {
   fetchUsers();
@@ -227,6 +306,7 @@ useEffect(() => {
 const value = {
   users,
   funds,
+  loans,
   notifications,
   isLoading,
   fetchUsers,
@@ -241,6 +321,11 @@ const value = {
   deleteFund, // ✅ add this
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  fetchLoans,
+  addLoan,
+  updateLoan,
+  updateLoanStatus,
+  deleteLoan,
 };
 
 
