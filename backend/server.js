@@ -109,46 +109,49 @@ app.get("/api/loans", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch loans" });
   }
 });
-
+// In your server.js
 app.put("/api/loans/:id", async (req, res) => {
   try {
-    const loan = await Loan.findById(req.params.id);
-    if (!loan) return res.status(404).json({ message: "Loan not found" });
+    const { status, paidInstallments } = req.body;
+    const updateData = {};
 
-    // If paidInstallments updated, recalculate remainingAmount
-    if (req.body.paidInstallments !== undefined) {
-      loan.paidInstallments = req.body.paidInstallments;
-      loan.remainingAmount =
-        loan.installmentAmount *
-        (loan.totalInstallments - loan.paidInstallments);
+    if (status) updateData.status = status;
+    if (paidInstallments !== undefined) {
+      updateData.paidInstallments = paidInstallments;
+      
+      // Recalculate remaining amount
+      const loan = await Loan.findById(req.params.id);
+      if (loan) {
+        updateData.remainingAmount = 
+          loan.installmentAmount * (loan.totalInstallments - paidInstallments);
+        
+        // Auto-update status based on payments
+        if (paidInstallments >= loan.totalInstallments) {
+          updateData.status = "paid";
+        } else if (paidInstallments > 0) {
+          updateData.status = "partially paid";
+        } else {
+          updateData.status = "pending";
+        }
+      }
     }
 
-    // Update status
-    if (req.body.status) loan.status = req.body.status;
+    const updatedLoan = await Loan.findByIdAndUpdate(
+      req.params.id, 
+      updateData, 
+      { new: true }
+    ).populate("participantId", "name phone");
 
-    await loan.save();
-
-    if (req.body.status === "paid") {
-      await User.findByIdAndUpdate(loan.participantId, {
-        $inc: { totalPaid: loan.totalAmount, pendingAmount: -loan.remainingAmount },
-      });
-
-      const user = await User.findById(loan.participantId);
-      await Notification.create({
-        userId: loan.participantId,
-        phone: user.phone,
-        type: "loan_paid",
-        message: `Loan of ₹${loan.totalAmount} for ${user.name} has been marked as paid.`,
-      });
+    if (!updatedLoan) {
+      return res.status(404).json({ success: false, error: "Loan not found" });
     }
 
-    res.json(loan);
+    res.json({ success: true, loan: updatedLoan });
   } catch (err) {
     console.error("Error updating loan:", err);
-    res.status(500).json({ message: "Failed to update loan" });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
-
 app.delete("/api/loans/:id", async (req, res) => {
   try {
     const loan = await Loan.findByIdAndDelete(req.params.id);

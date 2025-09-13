@@ -266,22 +266,32 @@ const updateLoan = async (id, updatedData) => {
   }
 };
 
-// Update Loan Status
+// In your DataContext
 const updateLoanStatus = async (id, status) => {
   try {
+    console.log("Updating loan status:", id, status);
     const res = await fetch(`${API_BASE_URL}/loans/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }), // Make sure this matches what the server expects
     });
+    
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to update loan status");
+    console.log("Loan status response:", res.status, data);
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to update loan status");
+    }
+    
     setLoans((prev) => prev.map((l) => (l._id === id ? data.loan : l)));
   } catch (err) {
     console.error("Update Loan Status Error:", err);
     throw err;
   }
 };
+
 
 // Delete Loan
 const deleteLoan = async (id) => {

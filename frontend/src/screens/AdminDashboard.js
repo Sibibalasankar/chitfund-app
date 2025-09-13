@@ -68,15 +68,32 @@ const AdminDashboard = ({ navigation }) => {
   const [userSearch, setUserSearch] = useState(""); // ✅ Search state
 
   // Add this function to handle adding installments
-  const handleAddInstallment = async (loanId, newPaidInstallments, participantName) => {
+  // In AdminDashboard component
+  const handleAddInstallment = async (updatedLoan) => {
     try {
-      await updateLoan(loanId, { paidInstallments: newPaidInstallments });
-      Alert.alert("Success", `Added payment for ${participantName}`);
+      // Optimistic UI update
+      setLoans(prevLoans =>
+        prevLoans.map(loan =>
+          loan._id === updatedLoan._id ? updatedLoan : loan
+        )
+      );
+
+      // Then make the API call
+      await updateLoan(updatedLoan._id, {
+        paidInstallments: updatedLoan.paidInstallments
+      });
+
+      Alert.alert("Success", `Added payment for ${updatedLoan.participantName}`);
     } catch (err) {
+      // Revert on error
+      setLoans(prevLoans =>
+        prevLoans.map(loan =>
+          loan._id === updatedLoan._id ? { ...loan, paidInstallments: loan.paidInstallments - 1 } : loan
+        )
+      );
       Alert.alert("Error", err.message || "Failed to add payment");
     }
   };
-
   // --- User Handlers ---
   const handleAddUser = () => {
     setEditingUser(null);
@@ -418,6 +435,7 @@ const AdminDashboard = ({ navigation }) => {
               </LinearGradient>
             </TouchableOpacity>
 
+          // In AdminDashboard render
             <LoanList
               loans={loans || []}
               fetchLoans={fetchLoans}
@@ -431,8 +449,9 @@ const AdminDashboard = ({ navigation }) => {
                   Alert.alert("Error", err.message || "Failed to update loan");
                 }
               }}
-              onAddInstallment={handleAddInstallment}
+              onAddInstallment={handleAddInstallment} // This should update the state
             />
+
           </View>
         );
 
@@ -481,7 +500,6 @@ const AdminDashboard = ({ navigation }) => {
         onSave={handleSaveUser}
       />
 
-      // In your AdminDashboard component, update the LoanForm usage:
       <LoanForm
         visible={loanModalVisible}
         onClose={() => setLoanModalVisible(false)}

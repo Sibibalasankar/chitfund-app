@@ -27,14 +27,31 @@ const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchL
     }
   }, [fetchLoans]);
 
-  const handleAddInstallmentPress = (loan) => {
-    if (loan.paidInstallments < loan.totalInstallments) {
-      const newPaidInstallments = loan.paidInstallments + 1;
-      onAddInstallment(loan._id, newPaidInstallments, loan.participantName);
+const handleAddInstallmentPress = (loan) => {
+  if (!loan || !loan._id) return;
+
+  if (loan.paidInstallments < loan.totalInstallments) {
+    const newPaidInstallments = loan.paidInstallments + 1;
+    const remainingAmount = loan.installmentAmount * (loan.totalInstallments - newPaidInstallments);
+    
+    // Create updated loan object
+    const updatedLoan = {
+      ...loan,
+      paidInstallments: newPaidInstallments,
+      remainingAmount: remainingAmount,
+      status: newPaidInstallments >= loan.totalInstallments ? "paid" : 
+              newPaidInstallments > 0 ? "partially paid" : "pending"
+    };
+
+    // Update parent state immediately for optimistic UI
+    if (onAddInstallment) {
+      onAddInstallment(updatedLoan);
     }
-  };
+  }
+};
 
   const renderLoanItem = ({ item }) => {
+    if (!item) return null;
     const participantName = item.participantId?.name || item.participantName || "Unknown";
     const remainingInstallments = item.totalInstallments - item.paidInstallments;
     const remainingAmount = item.remainingAmount || (item.installmentAmount * remainingInstallments);
@@ -49,8 +66,8 @@ const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchL
               item.status?.toLowerCase() === "paid"
                 ? styles.paidBadge
                 : item.status?.toLowerCase() === "partially paid"
-                ? styles.partialBadge
-                : styles.pendingBadge,
+                  ? styles.partialBadge
+                  : styles.pendingBadge,
             ]}
           >
             <Text style={styles.statusText}>{item.status || "Pending"}</Text>
@@ -67,13 +84,13 @@ const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchL
           <View style={styles.detailRow}>
             <Icon name="percent" size={16} color="#333" />
             <Text style={styles.detailLabel}>Interest:</Text>
-            <Text style={styles.detailValue}>{item.interestRate || 0}%</Text>
+            <Text style={styles.detailValue}>{`${item.interestRate ?? 0}%`}</Text>
           </View>
 
           <View style={styles.detailRow}>
             <Icon name="calendar-today" size={16} color="#333" />
             <Text style={styles.detailLabel}>Installments:</Text>
-            <Text style={styles.detailValue}>{item.paidInstallments || 0}/{item.totalInstallments || 1}</Text>
+            <Text style={styles.detailValue}>{`${item.paidInstallments || 0}/${item.totalInstallments || 1}`}</Text>
           </View>
 
           <View style={styles.detailRow}>
@@ -112,7 +129,7 @@ const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchL
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => onUpdateStatus?.(item._id, "paid", participantName)}
+                onPress={() => onUpdateStatus?.(item?._id, "paid", participantName)}
                 style={[styles.statusButton, { marginRight: 8 }]}
               >
                 <LinearGradient colors={["#007bff", "#0056b3"]} style={styles.gradientButton}>
@@ -128,7 +145,7 @@ const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchL
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => onDeleteLoan?.(item._id, participantName)}
+            onPress={() => onDeleteLoan?.(item?._id, participantName)}
             style={styles.deleteButton}
           >
             <Icon name="delete" size={20} color="#fff" />
@@ -140,8 +157,8 @@ const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchL
 
   return (
     <FlatList
-      data={loans}
-      keyExtractor={(item, index) => item._id?.toString() || index.toString()}
+      data={Array.isArray(loans) ? loans : []}
+      keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
       renderItem={renderLoanItem}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       contentContainerStyle={styles.listContainer}
