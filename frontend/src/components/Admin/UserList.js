@@ -2,87 +2,97 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const UserList = ({ 
-  users = [],
-  loans = [],
+  users = [], 
+  loans = [], // new prop for loans
   refreshing, 
   onRefresh, 
   onEditUser, 
   onDeleteUser, 
   onToggleStatus 
 }) => {
-  const renderUserItem = ({ item }) => (
-    
-    <View style={[styles.listItem, item.status === 'inactive' && styles.inactiveItem]}>
-      <View style={styles.itemContent}>
-        <View style={styles.userHeader}>
-          <Text style={styles.itemTitle}>{item.name}</Text>
-          <View style={[styles.statusBadge, item.status === 'active' ? styles.activeBadge : styles.inactiveBadge]}>
-            <Text style={styles.statusText}>{item.status}</Text>
+
+  const renderUserItem = ({ item }) => {
+    // Get loans corresponding to this user
+    const userLoans = loans.filter(loan => 
+      loan.participantId?._id === item._id || loan.participantId === item._id
+    );
+
+    return (
+      <View style={[styles.listItem, item.status === 'inactive' && styles.inactiveItem]}>
+        <View style={styles.itemContent}>
+          {/* User Header */}
+          <View style={styles.userHeader}>
+            <Text style={styles.itemTitle}>{item.name}</Text>
+            <View style={[styles.statusBadge, item.status === 'active' ? styles.activeBadge : styles.inactiveBadge]}>
+              <Text style={styles.statusText}>{item.status}</Text>
+            </View>
           </View>
-        </View>
-        
-        <View style={styles.userDetails}>
-          <View style={styles.detailRow}>
-            <Icon name="phone" size={16} color="#666" />
-            <Text style={styles.detailText}>{item.phone}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Icon name="person" size={16} color="#666" />
-            <Text style={styles.detailText}>{item.role}</Text>
-          </View>
-          
-          {item.joinedDate && (
+
+          {/* User Details */}
+          <View style={styles.userDetails}>
             <View style={styles.detailRow}>
-              <Icon name="calendar-today" size={16} color="#666" />
-              <Text style={styles.detailText}>Joined: {item.joinedDate}</Text>
+              <Icon name="phone" size={16} color="#666" />
+              <Text style={styles.detailText}>{item.phone}</Text>
             </View>
-          )}
-          
-          <View style={styles.financialInfo}>
-            <View style={styles.amountContainer}>
-              <Icon name="account-balance-wallet" size={16} color="#28a745" />
-              <Text style={styles.amountText}>₹{item.totalPaid || 0}</Text>
-              <Text style={styles.amountLabel}>Paid</Text>
+
+            <View style={styles.detailRow}>
+              <Icon name="person" size={16} color="#666" />
+              <Text style={styles.detailText}>{item.role}</Text>
             </View>
-            
-            <View style={styles.amountContainer}>
-              <Icon name="pending-actions" size={16} color="#dc3545" />
-              <Text style={styles.amountText}>₹{item.pendingAmount || 0}</Text>
-              <Text style={styles.amountLabel}>Pending</Text>
+
+            {item.joinedDate && (
+              <View style={styles.detailRow}>
+                <Icon name="calendar-today" size={16} color="#666" />
+                <Text style={styles.detailText}>Joined: {item.joinedDate}</Text>
+              </View>
+            )}
+
+            {/* Financial Info */}
+            <View style={styles.financialInfo}>
+              <View style={styles.amountContainer}>
+                <Icon name="account-balance-wallet" size={16} color="#28a745" />
+                <Text style={styles.amountText}>₹{item.totalPaid || 0}</Text>
+                <Text style={styles.amountLabel}>Paid</Text>
+              </View>
+
+              <View style={styles.amountContainer}>
+                <Icon name="pending-actions" size={16} color="#dc3545" />
+                <Text style={styles.amountText}>₹{item.pendingAmount || 0}</Text>
+                <Text style={styles.amountLabel}>Pending</Text>
+              </View>
             </View>
+
+            {/* Loans */}
+            {userLoans.length > 0 && (
+              <View style={styles.loansContainer}>
+                <Text style={styles.loansTitle}>Loans:</Text>
+                {userLoans.map(loan => (
+                  <View key={loan._id} style={styles.loanRow}>
+                    <Text style={styles.loanText}>
+                      ₹{loan.principalAmount} | {loan.status} | Installments: {loan.paidInstallments}/{loan.totalInstallments}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
+
+        {/* Action Buttons */}
+        <View style={styles.itemActions}>
+          <TouchableOpacity style={[styles.actionButton, styles.editButton]} onPress={() => onEditUser(item)}>
+            <Icon name="edit" size={18} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.statusButton]} onPress={() => onToggleStatus(item)}>
+            <Icon name={item.status === 'active' ? 'pause' : 'play-arrow'} size={18} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={() => onDeleteUser(item._id || item.id, item.name)}>
+            <Icon name="delete" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
-      
-      <View style={styles.itemActions}>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.editButton]}
-          onPress={() => onEditUser(item)}
-        >
-          <Icon name="edit" size={18} color="#fff" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.statusButton]}
-          onPress={() => onToggleStatus(item)}
-        >
-          <Icon 
-            name={item.status === 'active' ? 'pause' : 'play-arrow'} 
-            size={18} 
-            color="#fff" 
-          />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => onDeleteUser(item._id || item.id, item.name)}
-        >
-          <Icon name="delete" size={18} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -90,9 +100,7 @@ const UserList = ({
         data={users}
         keyExtractor={(item) => item._id?.toString() || item.id?.toString() || Math.random().toString()}
         renderItem={renderUserItem}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         style={styles.list}
       />
     </View>
@@ -123,8 +131,6 @@ const styles = StyleSheet.create({
   activeBadge: { backgroundColor: '#d4edda' },
   inactiveBadge: { backgroundColor: '#f8d7da' },
   statusText: { fontSize: 12, fontWeight: 'bold', textTransform: 'capitalize' },
-  activeStatus: { color: '#155724' },
-  inactiveStatus: { color: '#721c24' },
   userDetails: { marginTop: 8 },
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   detailText: { marginLeft: 8, fontSize: 14, color: '#666' },
@@ -132,6 +138,10 @@ const styles = StyleSheet.create({
   amountContainer: { alignItems: 'center' },
   amountText: { fontSize: 14, fontWeight: 'bold', color: '#333', marginTop: 2 },
   amountLabel: { fontSize: 12, color: '#666' },
+  loansContainer: { marginTop: 10 },
+  loansTitle: { fontWeight: 'bold', color: '#333', marginBottom: 4 },
+  loanRow: { flexDirection: 'row', marginBottom: 4 },
+  loanText: { fontSize: 13, color: '#555' },
   itemActions: { flexDirection: 'column', marginLeft: 10 },
   actionButton: { padding: 8, borderRadius: 6, marginBottom: 8, alignItems: 'center', justifyContent: 'center', minWidth: 40 },
   editButton: { backgroundColor: '#ffc107' },

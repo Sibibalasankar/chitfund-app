@@ -23,23 +23,33 @@ const LoanForm = ({
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Auto-calculate installment amount whenever principal, interest, or totalInstallments changes
+  // Auto-calculate installment amount & dueDate
   useEffect(() => {
     const principal = parseFloat(formData.principalAmount || formData.amount || 0);
     const interestRate = parseFloat(formData.interestRate || 0);
     const totalInstallments = parseInt(formData.totalInstallments || 1);
 
+    let updatedData = { ...formData };
+
+    // Calculate installment
     if (principal && interestRate && totalInstallments) {
       const totalInterest = principal * (interestRate / 100) * (totalInstallments / 12);
       const totalAmount = principal + totalInterest;
       const installmentAmount = parseFloat((totalAmount / totalInstallments).toFixed(2));
-      setFormData({ 
-        ...formData, 
-        installmentAmount,
-        amount: principal // Ensure amount field is set
-      });
+      updatedData.installmentAmount = installmentAmount;
+      updatedData.amount = principal; // Ensure amount field is set
     }
-  }, [formData.principalAmount, formData.amount, formData.interestRate, formData.totalInstallments]);
+
+    // Auto-calculate dueDate based on startDate + totalInstallments months
+    if (formData.startDate && totalInstallments) {
+      const start = new Date(formData.startDate);
+      const due = new Date(start);
+      due.setMonth(due.getMonth() + totalInstallments);
+      updatedData.dueDate = due.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+
+    setFormData(updatedData);
+  }, [formData.principalAmount, formData.amount, formData.interestRate, formData.totalInstallments, formData.startDate]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -52,7 +62,6 @@ const LoanForm = ({
     );
   };
 
-  // Compute loan status
   const computeStatus = () => {
     if (!formData.paidInstallments || formData.paidInstallments === 0) return 'Pending';
     if (formData.paidInstallments >= formData.totalInstallments) return 'Paid';
@@ -139,8 +148,9 @@ const LoanForm = ({
             />
           )}
 
-          {/* Auto-calculated installment */}
+          {/* Auto-calculated installment & dueDate */}
           <Text style={styles.label}>Installment Amount (₹): {formData.installmentAmount || 0}</Text>
+          <Text style={styles.label}>Due Date: {formData.dueDate || 'Not set'}</Text>
 
           {/* Paid Installments */}
           <Text style={styles.label}>Paid Installments:</Text>
