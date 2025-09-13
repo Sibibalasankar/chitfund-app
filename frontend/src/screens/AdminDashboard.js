@@ -1,54 +1,46 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  SafeAreaView,
-} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
-import { validatePhone, validateName } from "../utils/validation";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { validateName, validatePhone } from "../utils/validation";
 
-import AdminTabs from "../components/Admin/Tabs";
-import StatsOverview from "../components/Admin/StatsOverview";
-import UserList from "../components/Admin/UserList";
-import UserForm from "../components/Admin/UserForm";
-import FundList from "../components/Admin/FundList";
 import FundForm from "../components/Admin/FundForm";
-import NotificationList from "../components/Admin/NotificationList";
+import FundList from "../components/Admin/FundList";
 import LoanForm from "../components/Admin/LoanForm";
-import LoanList from "../components/Admin/LoanList"; 
-
+import LoanList from "../components/Admin/LoanList";
+import NotificationList from "../components/Admin/NotificationList";
+import StatsOverview from "../components/Admin/StatsOverview";
+import AdminTabs from "../components/Admin/Tabs";
+import UserForm from "../components/Admin/UserForm";
+import UserList from "../components/Admin/UserList";
 
 const AdminDashboard = ({ navigation }) => {
   const { logout } = useAuth();
- const {
-  users,
-  funds,
-  loans,       // add this
-  notifications,
-  isLoading,
-  addUser,
-  updateUser,
-  deleteUser,
-  fetchUsers,
-  fetchFunds,
-  fetchNotifications,
-  addFund,
-  updateFund,
-  updateFundStatus,
-  deleteFund,
-  addLoan,     // add this
-  updateLoan,  // add this
-  updateLoanStatus, // add this
-  deleteLoan,  // add this
-} = useData();
-
+  const {
+    users,
+    funds,
+    loans,
+    notifications,
+    isLoading,
+    addUser,
+    updateUser,
+    deleteUser,
+    fetchUsers,
+    fetchFunds,
+    fetchLoans,
+    fetchNotifications,
+    addFund,
+    updateFund,
+    updateFundStatus,
+    deleteFund,
+    addLoan,
+    updateLoan,
+    updateLoanStatus,
+    deleteLoan,
+  } = useData();
 
   const [fundModalVisible, setFundModalVisible] = useState(false);
   const [fundFormData, setFundFormData] = useState({
@@ -57,13 +49,13 @@ const AdminDashboard = ({ navigation }) => {
     dueDate: "",
     status: "pending",
   });
-  const [editingFund, setEditingFund] = useState(null); // ✅ track edit mode
-  const [loanModalVisible, setLoanModalVisible] = useState(false);
-  const [loanFormData, setLoanFormData] = useState({ participantId: "", amount: 0, status: "pending" });
-  const [editingLoan, setEditingLoan] = useState(null);
+  const [editingFund, setEditingFund] = useState(null);
+
+
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -73,17 +65,9 @@ const AdminDashboard = ({ navigation }) => {
     status: "active",
   });
 
-  // ✅ Refresh users, funds, notifications
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([fetchUsers(), fetchFunds(), fetchNotifications()]);
-    } catch (error) {
-      console.log("Refresh Error:", error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  const [userSearch, setUserSearch] = useState(""); // ✅ Search state
+
+
 
   // --- User Handlers ---
   const handleAddUser = () => {
@@ -119,11 +103,10 @@ const AdminDashboard = ({ navigation }) => {
         await addUser(formData);
         Alert.alert("Success", "User added successfully");
       }
+      setModalVisible(false);
     } catch (err) {
       Alert.alert("Error", err.message || "Failed to save user");
     }
-
-    setModalVisible(false);
   };
 
   const handleDeleteUser = (userId, userName) => {
@@ -194,7 +177,7 @@ const AdminDashboard = ({ navigation }) => {
       Alert.alert("Error", err.message || "Failed to save fund");
     }
   };
-  // --- Fund Handlers ---
+
   const handleDeleteFund = (fundId, participantName) => {
     Alert.alert(
       "Delete Fund",
@@ -206,9 +189,8 @@ const AdminDashboard = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             try {
-              await deleteFund(fundId); // make sure deleteFund exists in your DataContext
+              await deleteFund(fundId);
               Alert.alert("Deleted", `Fund for ${participantName} has been removed`);
-              setFundModalVisible(false); // close modal after delete
             } catch (err) {
               Alert.alert("Error", err.message || "Failed to delete fund");
             }
@@ -218,9 +200,50 @@ const AdminDashboard = ({ navigation }) => {
     );
   };
 
+  // --- Logout ---
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Logout", style: "destructive", onPress: () => logout() },
+    ]);
+  };
+const [loanModalVisible, setLoanModalVisible] = useState(false);
+  const [loanFormData, setLoanFormData] = useState({ 
+    participantId: "", 
+    principalAmount: 0, 
+    interestRate: 0, 
+    totalInstallments: 1,
+    paidInstallments: 0,
+    startDate: "",
+    status: "pending"
+  });
+  const [editingLoan, setEditingLoan] = useState(null);
+
+  // --- Refresh ---
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchUsers(), fetchFunds(), fetchLoans(), fetchNotifications()]);
+    } catch (error) {
+      console.log("Refresh Error:", error);
+      Alert.alert("Error", "Failed to refresh data");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // --- Loan Handlers ---
   const handleAddLoan = () => {
     setEditingLoan(null);
-    setLoanFormData({ participantId: "", amount: 0, status: "pending" });
+    setLoanFormData({ 
+      participantId: "", 
+      principalAmount: 0, 
+      interestRate: 0, 
+      totalInstallments: 1,
+      paidInstallments: 0,
+      startDate: "",
+      status: "pending"
+    });
     setLoanModalVisible(true);
   };
 
@@ -228,19 +251,29 @@ const AdminDashboard = ({ navigation }) => {
     setEditingLoan(loan);
     setLoanFormData({
       participantId: loan.participantId?._id || loan.participantId,
-      amount: loan.amount,
-      status: loan.status,
+      principalAmount: loan.principalAmount || loan.amount || 0,
+      interestRate: loan.interestRate || 0,
+      totalInstallments: loan.totalInstallments || 1,
+      paidInstallments: loan.paidInstallments || 0,
+      startDate: loan.startDate || "",
+      status: loan.status || "pending",
+      installmentAmount: loan.installmentAmount || 0
     });
     setLoanModalVisible(true);
   };
 
-  const handleSaveLoan = async () => {
-    if (!loanFormData.participantId || loanFormData.amount <= 0) {
-      return Alert.alert("Error", "Please fill all fields");
+  const handleSaveLoan = async (loanData) => {
+    if (!loanData.participantId || loanData.principalAmount <= 0 || loanData.interestRate <= 0) {
+      return Alert.alert("Error", "Please fill all required fields");
     }
     try {
-      if (editingLoan) await updateLoan(editingLoan._id, loanFormData);
-      else await addLoan(loanFormData);
+      if (editingLoan) {
+        await updateLoan(editingLoan._id, loanData);
+        Alert.alert("Success", "Loan updated successfully");
+      } else {
+        await addLoan(loanData);
+        Alert.alert("Success", "Loan added successfully");
+      }
       setLoanModalVisible(false);
     } catch (err) {
       Alert.alert("Error", err.message || "Failed to save loan");
@@ -260,8 +293,6 @@ const AdminDashboard = ({ navigation }) => {
             try {
               await deleteLoan(loanId);
               Alert.alert("Deleted", `Loan for ${participantName} has been removed`);
-              setLoanModalVisible(false);
-              setEditingLoan(null);
             } catch (err) {
               Alert.alert("Error", err.message || "Failed to delete loan");
             }
@@ -271,19 +302,12 @@ const AdminDashboard = ({ navigation }) => {
     );
   };
 
-  // --- Logout ---
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: () => {
-          logout();
-        },
-      },
-    ]);
-  };
+  // --- Filtered Users ---
+  const filteredUsers = users.filter(user => 
+    user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+    user.phone.includes(userSearch) ||
+    user.role.toLowerCase().includes(userSearch.toLowerCase())
+  );
 
   // --- Tab Content ---
   const getActiveTabContent = () => {
@@ -305,6 +329,13 @@ const AdminDashboard = ({ navigation }) => {
       case "users":
         return (
           <View style={styles.tabContent}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name, phone, or role"
+              value={userSearch}
+              onChangeText={setUserSearch}
+            />
+
             <TouchableOpacity
               style={styles.gradientButton}
               onPress={handleAddUser}
@@ -320,8 +351,10 @@ const AdminDashboard = ({ navigation }) => {
                 <Text style={styles.gradientButtonText}>Add User</Text>
               </LinearGradient>
             </TouchableOpacity>
+
             <UserList
-              users={users || []}
+              users={filteredUsers}
+              loans={loans}  
               onEditUser={handleEditUser}
               onDeleteUser={handleDeleteUser}
               onToggleStatus={toggleUserStatus}
@@ -362,10 +395,11 @@ const AdminDashboard = ({ navigation }) => {
                   Alert.alert("Error", err.message || "Failed to update fund");
                 }
               }}
-              onEditFund={handleEditFund} // ✅ pass edit handler
+              onEditFund={handleEditFund}
             />
           </View>
         );
+
       case "loans":
         return (
           <View style={styles.tabContent}>
@@ -391,7 +425,6 @@ const AdminDashboard = ({ navigation }) => {
             />
           </View>
         );
-
 
       case "notifications":
         return (
@@ -432,10 +465,12 @@ const AdminDashboard = ({ navigation }) => {
       <UserForm
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        editingUser={editingUser}
         formData={formData}
         setFormData={setFormData}
         onSave={handleSaveUser}
       />
+      
       <LoanForm
         visible={loanModalVisible}
         onClose={() => setLoanModalVisible(false)}
@@ -443,48 +478,20 @@ const AdminDashboard = ({ navigation }) => {
         formData={loanFormData}
         setFormData={setLoanFormData}
         onSave={handleSaveLoan}
-        onDelete={async () => {
-          if (!editingLoan) return;
-          handleDeleteLoan(editingLoan._id, editingLoan.participantId?.name);
-        }}
+        onDelete={editingLoan ? () => handleDeleteLoan(editingLoan._id, editingLoan.participantId?.name) : null}
         isEditing={!!editingLoan}
       />
 
       <FundForm
-        visible={fundModalVisible}                     // ✅ use correct state
+        visible={fundModalVisible}
         onClose={() => setFundModalVisible(false)}
         users={users}
-        formData={fundFormData}                        // ✅ use fundFormData
-        setFormData={setFundFormData}                  // ✅ use fundFormData setter
+        formData={fundFormData}
+        setFormData={setFundFormData}
         onSave={handleSaveFund}
-        onDelete={async () => {                        // ✅ delete handler
-          if (!editingFund) return;
-          Alert.alert(
-            "Delete Fund",
-            "Are you sure you want to delete this fund?",
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Delete",
-                style: "destructive",
-                onPress: async () => {
-                  try {
-                    await deleteFund(editingFund._id);   // implement deleteFund in your DataContext
-                    Alert.alert("Deleted", "Fund has been removed");
-                    setFundModalVisible(false);
-                    setEditingFund(null);
-                  } catch (err) {
-                    Alert.alert("Error", err.message || "Failed to delete fund");
-                  }
-                },
-              },
-            ]
-          );
-        }}
-        isEditing={!!editingFund}                      // ✅ edit mode flag
+        onDelete={editingFund ? () => handleDeleteFund(editingFund._id, editingFund.participantId?.name) : null}
+        isEditing={!!editingFund}
       />
-
-
     </SafeAreaView>
   );
 };
@@ -510,7 +517,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 12,
   },
-  gradientButtonText: { color: "#fff", fontWeight: "bold", marginLeft: 8, fontSize: 15 },
+  gradientButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold", marginLeft: 8 },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+    fontSize: 14,
+    backgroundColor: "#fff",
+  },
 });
 
 export default AdminDashboard;

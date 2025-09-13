@@ -1,0 +1,7 @@
+# .easignore
+node_modules/.cache
+.git
+android/.gradle
+ios/Pods
+*.log
+*.iml

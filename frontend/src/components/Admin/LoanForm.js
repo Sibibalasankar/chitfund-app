@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useEffect, useState } from 'react';
 import {
-  View,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Modal,
-  ScrollView,
-  Alert
+  View
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 const LoanForm = ({
   visible,
@@ -25,16 +25,21 @@ const LoanForm = ({
 
   // Auto-calculate installment amount whenever principal, interest, or totalInstallments changes
   useEffect(() => {
-    const principal = parseFloat(formData.principalAmount || 0);
+    const principal = parseFloat(formData.principalAmount || formData.amount || 0);
     const interestRate = parseFloat(formData.interestRate || 0);
     const totalInstallments = parseInt(formData.totalInstallments || 1);
 
     if (principal && interestRate && totalInstallments) {
       const totalInterest = principal * (interestRate / 100) * (totalInstallments / 12);
       const totalAmount = principal + totalInterest;
-      setFormData({ ...formData, installmentAmount: parseFloat((totalAmount / totalInstallments).toFixed(2)) });
+      const installmentAmount = parseFloat((totalAmount / totalInstallments).toFixed(2));
+      setFormData({ 
+        ...formData, 
+        installmentAmount,
+        amount: principal // Ensure amount field is set
+      });
     }
-  }, [formData.principalAmount, formData.interestRate, formData.totalInstallments]);
+  }, [formData.principalAmount, formData.amount, formData.interestRate, formData.totalInstallments]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -70,41 +75,48 @@ const LoanForm = ({
           <ScrollView style={styles.pickerContainer} contentContainerStyle={{ flexGrow: 1 }}>
             {users.map(user => (
               <TouchableOpacity
-                key={user._id}
-                style={[styles.pickerOption, formData.participantId === user._id && styles.pickerSelected]}
-                onPress={() => setFormData({ ...formData, participantId: user._id })}
+                key={user._id || user.id}
+                style={[styles.pickerOption, formData.participantId === (user._id || user.id) && styles.pickerSelected]}
+                onPress={() => setFormData({ ...formData, participantId: user._id || user.id })}
               >
-                <Text style={formData.participantId === user._id ? styles.pickerTextSelected : styles.pickerText}>{user.name}</Text>
+                <Text style={formData.participantId === (user._id || user.id) ? styles.pickerTextSelected : styles.pickerText}>{user.name}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {/* Principal */}
+          {/* Principal Amount */}
           <Text style={styles.label}>Principal Amount (₹):</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
             placeholder="Enter principal amount"
-            value={formData.principalAmount?.toString() || ''}
-            onChangeText={text => setFormData({ ...formData, principalAmount: parseFloat(text) || 0 })}
+            placeholderTextColor="#888"
+            value={formData.principalAmount?.toString() || formData.amount?.toString() || ''}
+            onChangeText={text => setFormData({ 
+              ...formData, 
+              principalAmount: parseFloat(text) || 0,
+              amount: parseFloat(text) || 0 
+            })}
           />
 
-          {/* Interest */}
+          {/* Interest Rate */}
           <Text style={styles.label}>Interest Rate (% p.a.):</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
             placeholder="Enter interest rate"
+            placeholderTextColor="#888"
             value={formData.interestRate?.toString() || ''}
             onChangeText={text => setFormData({ ...formData, interestRate: parseFloat(text) || 0 })}
           />
 
-          {/* Installments */}
+          {/* Total Installments */}
           <Text style={styles.label}>Total Installments:</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
             placeholder="Enter total installments"
+            placeholderTextColor="#888"
             value={formData.totalInstallments?.toString() || ''}
             onChangeText={text => setFormData({ ...formData, totalInstallments: parseInt(text) || 1 })}
           />
@@ -136,12 +148,13 @@ const LoanForm = ({
             style={styles.input}
             keyboardType="numeric"
             placeholder="Enter paid installments"
+            placeholderTextColor="#888"
             value={formData.paidInstallments?.toString() || '0'}
             onChangeText={text => setFormData({ ...formData, paidInstallments: parseInt(text) || 0 })}
           />
 
           {/* Status */}
-          <Text style={styles.label}>Status: {computeStatus()}</Text>
+          <Text style={styles.label}>Status: {formData.status || computeStatus()}</Text>
 
           {/* Buttons */}
           <View style={styles.buttonContainer}>
@@ -155,7 +168,7 @@ const LoanForm = ({
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={onSave}>
+            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={() => onSave(formData)}>
               <Text style={styles.buttonText}>{isEditing ? "Update" : "Save"}</Text>
             </TouchableOpacity>
           </View>

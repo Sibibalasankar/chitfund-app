@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons'; // 👈 vector icons
+import { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // 👈 vector icons
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from '../hooks/useForm';
-import { validatePhone, validatePassword } from '../utils/validation';
+import { validatePassword, validatePhone } from '../utils/validation';
 
 const LoginScreen = ({ navigation }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -93,6 +93,7 @@ const LoginScreen = ({ navigation }) => {
                 errors.phone && touched.phone && styles.inputError,
               ]}
               placeholder="Mobile Number (10 digits)"
+              placeholderTextColor="#888"  // 👈 visible placeholder
               value={values.phone}
               onChangeText={formatPhoneInput}
               onBlur={() => handleBlur('phone')}
@@ -104,16 +105,17 @@ const LoginScreen = ({ navigation }) => {
             )}
           </View>
 
-          {/* Password input with eye toggle */}
+          {/* Password input */}
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
               <TextInput
                 style={styles.passwordInput}
                 placeholder="Password"
+                placeholderTextColor="#888"  // 👈 visible placeholder
                 value={values.password}
                 onChangeText={(value) => handleChange('password', value)}
                 onBlur={() => handleBlur('password')}
-                secureTextEntry={!showPassword} // 👈 toggle
+                secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
     padding: 30,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    paddingTop:60,
+    paddingTop: 60,
     alignItems: 'center',
   },
   title: { fontSize: 32, fontWeight: 'bold', color: 'white', marginBottom: 10 },
@@ -230,6 +232,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
     fontSize: 16,
+    color: '#000',  // 👈 black text for input
   },
   inputError: { borderColor: '#dc3545' },
   errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },
@@ -285,7 +288,7 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#000',  // 👈 black text for password
   },
 });
 

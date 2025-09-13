@@ -1,38 +1,56 @@
 {
   "expo": {
-    "name": "ChitFund",
-    "slug": "frontend",
+    "name": "Chitfund",
+    "slug": "Chitfund",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "icon": "./assets/icon.jpg",
+    "scheme": "mynewapp",
+    "userInterfaceStyle": "automatic",
+    // "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/icon.jpg",
+        "backgroundImage": "./assets/icon.jpg",
+        "monochromeImage": "./assets/icon.jpg"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.sibi1915.frontend"
+      "predictiveBackGestureEnabled": false,
+      "package": "com.sibi5161.MyNewApp"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "output": "static",
+      "favicon": "./assets/icon.jpg"
     },
     "plugins": [
-      "expo-secure-store",
-      "expo-font"
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.jpg",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-asset"
     ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "3363a25c-511d-4ad9-86cd-bf3c9e427dff"
+        "projectId": "acb5f68a-dfd8-4f56-8c2e-44b28d69686c"
       }
     }
   }

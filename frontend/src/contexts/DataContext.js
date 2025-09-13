@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 
 const DataContext = createContext();
@@ -9,6 +9,7 @@ export const DataProvider = ({ children }) => {
 
   const [users, setUsers] = useState([]);
   const [funds, setFunds] = useState([]);
+  // ---- Notifications ----
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   // ---- Loans ----
@@ -300,6 +301,7 @@ const deleteLoan = async (id) => {
 useEffect(() => {
   fetchUsers();
   fetchFunds();
+  fetchLoans();
   if (user) fetchNotifications();  // 👈 only after login
 }, [user]);
 
@@ -311,6 +313,7 @@ const value = {
   isLoading,
   fetchUsers,
   fetchFunds,
+  fetchLoans,
   fetchNotifications,
   addUser,
   updateUser,

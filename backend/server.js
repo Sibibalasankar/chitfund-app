@@ -64,6 +64,96 @@ const Notification = mongoose.model("Notification", notificationSchema);
 
 // ✅ Import AuthUser for login credentials
 const AuthUser = require("./models/AuthUser");
+const Loan = require("./models/Loan");
+/* ===========================
+   LOAN ROUTES
+=========================== */
+app.get("/api/loans", async (req, res) => {
+  try {
+    const loans = await Loan.find().populate("participantId", "name phone");
+    res.json(loans);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/loans", async (req, res) => {
+  try {
+    const { participantId, amount, interestRate, dueDate } = req.body;
+
+    const loan = new Loan({ participantId, amount, interestRate, dueDate, status: "pending" });
+    await loan.save();
+
+    await User.findByIdAndUpdate(participantId, { $inc: { pendingAmount: amount } });
+    const user = await User.findById(participantId);
+
+    await Notification.create({
+      userId: participantId,
+      phone: user.phone,
+      type: "loan_added",
+      message: `New loan of ₹${amount} added for ${user.name} at ${interestRate}% interest.`,
+    });
+
+    res.status(201).json({ success: true, loan });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.put("/api/loans/:id", async (req, res) => {
+  try {
+    const loan = await Loan.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!loan) return res.status(404).json({ success: false, error: "Loan not found" });
+
+    // When loan is paid
+    if (req.body.status === "paid") {
+      await User.findByIdAndUpdate(loan.participantId, {
+        $inc: { totalPaid: loan.amount, pendingAmount: -loan.amount },
+      });
+
+      const user = await User.findById(loan.participantId);
+      await Notification.create({
+        userId: loan.participantId,
+        phone: user.phone,
+        type: "loan_paid",
+        message: `Loan of ₹${loan.amount} for ${user.name} has been marked as paid.`,
+      });
+    }
+
+    res.json({ success: true, loan });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.delete("/api/loans/:id", async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id).populate("participantId", "name phone");
+    if (!loan) return res.status(404).json({ success: false, error: "Loan not found" });
+
+    const participantName = loan.participantId?.name || "Unknown Participant";
+    const participantPhone = loan.participantId?.phone || "N/A";
+    const amount = loan.amount;
+    const interestRate = loan.interestRate;
+    const dueDate = loan.dueDate;
+    const status = loan.status;
+
+    await loan.deleteOne();
+
+    await Notification.create({
+      userId: loan.participantId?._id || null,
+      phone: participantPhone,
+      type: "loan_deleted",
+      message: `Loan deleted: Participant: ${participantName}, Amount: ₹${amount}, Interest: ${interestRate}%, Due Date: ${dueDate}, Status: ${status}`,
+      isRead: false,
+    });
+
+    res.json({ success: true, message: "Loan deleted", loanId: loan._id });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 /* ===========================
    USER ROUTES

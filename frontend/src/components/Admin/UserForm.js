@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const UserForm = ({
   visible,
@@ -32,6 +31,7 @@ const UserForm = ({
           <TextInput
             style={styles.modalInput}
             placeholder="Mobile Number (10 digits)"
+            placeholderTextColor="#888"
             value={formData.phone || ''}
             onChangeText={(text) => setFormData({...formData, phone: text})}
             keyboardType="phone-pad"

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { useState } from "react";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [phone, setPhone] = useState("");
@@ -9,7 +9,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (!phone || !newPassword) return Alert.alert("Error", "Enter phone number and new password");
 
     try {
-      const response = await fetch("http://YOUR_BACKEND_URL/api/auth/reset-password", {
+      const response = await fetch("https://chitfund-app-4b4s.onrender.com/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, newPassword }),
@@ -33,6 +33,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Phone number"
+        placeholderTextColor="#888"
         keyboardType="phone-pad"
         value={phone}
         onChangeText={setPhone}
@@ -40,6 +41,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="New Password"
+        placeholderTextColor="#888"
         secureTextEntry
         value={newPassword}
         onChangeText={setNewPassword}

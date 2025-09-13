@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // 👁️ Eye icon
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from '../hooks/useForm';
 import {
-  validatePhone,
-  validatePassword,
+  getPasswordStrength,
   validateName,
-  getPasswordStrength
+  validatePassword,
+  validatePhone,
 } from '../utils/validation';
 
 const RegisterScreen = ({ navigation }) => {
@@ -57,16 +57,17 @@ const RegisterScreen = ({ navigation }) => {
     return errors;
   };
 
-  const { values, errors, touched, handleChange, handleBlur, validateForm } = useForm(
-    {
-      name: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      role: 'participant'
-    },
-    validate
-  );
+  const { values, errors, touched, handleChange, handleBlur, validateForm } =
+    useForm(
+      {
+        name: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        role: 'participant',
+      },
+      validate
+    );
 
   const passwordStrength = getPasswordStrength(values.password);
 
@@ -76,13 +77,11 @@ const RegisterScreen = ({ navigation }) => {
     setIsLoading(true);
     try {
       await register(values);
-      Alert.alert(
-        "Success",
-        "Registration successful. Please login to continue.",
-        [{ text: "OK", onPress: () => navigation.replace("Login") }]
-      );
+      Alert.alert('Success', 'Registration successful. Please login to continue.', [
+        { text: 'OK', onPress: () => navigation.replace('Login') },
+      ]);
     } catch (error) {
-      Alert.alert("Registration Failed", error.message);
+      Alert.alert('Registration Failed', error.message);
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +120,7 @@ const RegisterScreen = ({ navigation }) => {
             <TextInput
               style={[styles.input, errors.name && touched.name && styles.inputError]}
               placeholder="Full Name"
+              placeholderTextColor="#888" // 👈 ensures visible placeholder
               value={values.name}
               onChangeText={(value) => handleChange('name', value)}
               onBlur={() => handleBlur('name')}
@@ -136,6 +136,7 @@ const RegisterScreen = ({ navigation }) => {
             <TextInput
               style={[styles.input, errors.phone && touched.phone && styles.inputError]}
               placeholder="Mobile Number (10 digits)"
+              placeholderTextColor="#888"
               value={values.phone}
               onChangeText={formatPhoneInput}
               onBlur={() => handleBlur('phone')}
@@ -151,8 +152,9 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
               <TextInput
-                style={[styles.input, { flex: 1, borderWidth: 0, backgroundColor: 'transparent' }]}
+                style={[styles.passwordInput]}
                 placeholder="Password"
+                placeholderTextColor="#888"
                 value={values.password}
                 onChangeText={(value) => handleChange('password', value)}
                 onBlur={() => handleBlur('password')}
@@ -175,12 +177,17 @@ const RegisterScreen = ({ navigation }) => {
                       styles.passwordStrengthFill,
                       {
                         width: `${(passwordStrength.strength / 5) * 100}%`,
-                        backgroundColor: getPasswordStrengthColor()
-                      }
+                        backgroundColor: getPasswordStrengthColor(),
+                      },
                     ]}
                   />
                 </View>
-                <Text style={[styles.passwordStrengthText, { color: getPasswordStrengthColor() }]}>
+                <Text
+                  style={[
+                    styles.passwordStrengthText,
+                    { color: getPasswordStrengthColor() },
+                  ]}
+                >
                   {passwordStrength.label}
                 </Text>
               </View>
@@ -194,8 +201,9 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
               <TextInput
-                style={[styles.input, { flex: 1, borderWidth: 0, backgroundColor: 'transparent' }]}
+                style={styles.passwordInput}
                 placeholder="Confirm Password"
+                placeholderTextColor="#888"
                 value={values.confirmPassword}
                 onChangeText={(value) => handleChange('confirmPassword', value)}
                 onBlur={() => handleBlur('confirmPassword')}
@@ -279,9 +287,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
+    color: '#000', // 👈 ensures typed text is black
   },
-  inputError: { borderColor: '#dc3545' },
-  errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -290,7 +297,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
     paddingRight: 10,
+    height: 50,
   },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000', // 👈 black typed text for password fields
+    paddingHorizontal: 10,
+  },
+  inputError: { borderColor: '#dc3545' },
+  errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },
   passwordStrengthContainer: { marginTop: 8 },
   passwordStrengthBar: {
     height: 4,

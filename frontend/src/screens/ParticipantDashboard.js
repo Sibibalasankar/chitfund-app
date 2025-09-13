@@ -1,18 +1,9 @@
-import React, { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  SafeAreaView,
-  StatusBar,
-  ScrollView
-} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useState } from "react";
+import { FlatList, RefreshControl, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
-import { Ionicons } from "@expo/vector-icons";
 
 const ParticipantDashboard = () => {
   const { user, logout } = useAuth();

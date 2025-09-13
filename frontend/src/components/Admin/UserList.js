@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const UserList = ({ 
   users = [],
+  loans = [],
   refreshing, 
   onRefresh, 
   onEditUser, 
@@ -11,6 +11,7 @@ const UserList = ({
   onToggleStatus 
 }) => {
   const renderUserItem = ({ item }) => (
+    
     <View style={[styles.listItem, item.status === 'inactive' && styles.inactiveItem]}>
       <View style={styles.itemContent}>
         <View style={styles.userHeader}>
@@ -31,21 +32,23 @@ const UserList = ({
             <Text style={styles.detailText}>{item.role}</Text>
           </View>
           
-          <View style={styles.detailRow}>
-            <Icon name="calendar-today" size={16} color="#666" />
-            <Text style={styles.detailText}>Joined: {item.joinedDate}</Text>
-          </View>
+          {item.joinedDate && (
+            <View style={styles.detailRow}>
+              <Icon name="calendar-today" size={16} color="#666" />
+              <Text style={styles.detailText}>Joined: {item.joinedDate}</Text>
+            </View>
+          )}
           
           <View style={styles.financialInfo}>
             <View style={styles.amountContainer}>
               <Icon name="account-balance-wallet" size={16} color="#28a745" />
-              <Text style={styles.amountText}>₹{item.totalPaid}</Text>
+              <Text style={styles.amountText}>₹{item.totalPaid || 0}</Text>
               <Text style={styles.amountLabel}>Paid</Text>
             </View>
             
             <View style={styles.amountContainer}>
               <Icon name="pending-actions" size={16} color="#dc3545" />
-              <Text style={styles.amountText}>₹{item.pendingAmount}</Text>
+              <Text style={styles.amountText}>₹{item.pendingAmount || 0}</Text>
               <Text style={styles.amountLabel}>Pending</Text>
             </View>
           </View>
@@ -85,7 +88,7 @@ const UserList = ({
     <View style={styles.container}>
       <FlatList
         data={users}
-        keyExtractor={(item) => item._id?.toString() || item.id?.toString()}
+        keyExtractor={(item) => item._id?.toString() || item.id?.toString() || Math.random().toString()}
         renderItem={renderUserItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -119,7 +122,9 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   activeBadge: { backgroundColor: '#d4edda' },
   inactiveBadge: { backgroundColor: '#f8d7da' },
-  statusText: { fontSize: 12, fontWeight: 'bold', color: '#155724' },
+  statusText: { fontSize: 12, fontWeight: 'bold', textTransform: 'capitalize' },
+  activeStatus: { color: '#155724' },
+  inactiveStatus: { color: '#721c24' },
   userDetails: { marginTop: 8 },
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   detailText: { marginLeft: 8, fontSize: 14, color: '#666' },

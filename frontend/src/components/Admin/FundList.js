@@ -1,22 +1,39 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFund }) => {
   const [filterStatus, setFilterStatus] = useState('all');
-  const [sortOption, setSortOption] = useState('dueDate');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortOption, setSortOption] = useState('recent'); // default sort
+  const [sortOrder, setSortOrder] = useState('desc'); // recently added first
 
   const displayedFunds = useMemo(() => {
     let filtered = [...funds];
+
+    // Filter by status
     if (filterStatus !== 'all') filtered = filtered.filter(f => f.status === filterStatus);
 
+    // Sort
     filtered.sort((a, b) => {
-      if (sortOption === 'amount') return sortOrder === 'asc' ? a.amount - b.amount : b.amount - a.amount;
-      return sortOrder === 'asc'
-        ? new Date(a.dueDate) - new Date(b.dueDate)
-        : new Date(b.dueDate) - new Date(a.dueDate);
+      if (sortOption === 'amount') {
+        return sortOrder === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+      }
+      else if (sortOption === 'dueDate') {
+        // Sort by due date
+        return sortOrder === 'asc'
+          ? new Date(a.dueDate) - new Date(b.dueDate)
+          : new Date(b.dueDate) - new Date(a.dueDate);
+      }
+      else {
+        // Default: recently added first (sort by createdAt or _id as fallback)
+        const dateA = a.createdAt || a._id || 0;
+        const dateB = b.createdAt || b._id || 0;
+        
+        return sortOrder === 'asc'
+          ? new Date(dateA) - new Date(dateB)
+          : new Date(dateB) - new Date(dateA);
+      }
     });
 
     return filtered;
@@ -26,9 +43,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
     <View style={styles.listItem}>
       <View style={{ flex: 1 }}>
         <View style={styles.fundHeader}>
-          <Text style={styles.itemTitle}>
-            {item.participantId?.name || "Unknown"}
-          </Text>
+          <Text style={styles.itemTitle}>{item.participantId?.name || "Unknown"}</Text>
           <View
             style={[
               styles.statusBadge,
@@ -69,18 +84,14 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
           )}
         </View>
 
-        {/* ✅ Buttons Row (Edit + Mark Paid) */}
         <View style={styles.buttonRow}>
-          <TouchableOpacity
-            onPress={() => onEditFund(item)}
-            style={styles.editButton}
-          >
+          <TouchableOpacity onPress={() => onEditFund(item)} style={styles.editButton}>
             <Icon name="edit" size={18} color="#fff" />
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
 
           {item.status === 'pending' && (
-            <TouchableOpacity onPress={() => onUpdateStatus(item._id || item.id, 'paid', item.participantName)}>
+            <TouchableOpacity onPress={() => onUpdateStatus(item._id || item.id, 'paid', item.participantId?.name || "Unknown")}>
               <LinearGradient colors={['#28a745', '#81c784']} style={styles.payButton}>
                 <Icon name="check" size={20} color="#fff" />
                 <Text style={styles.payButtonText}>Mark Paid</Text>
@@ -112,14 +123,14 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
 
         <View style={styles.sortGroup}>
           <Text style={styles.filterLabel}>Sort:</Text>
-          {['dueDate', 'amount'].map(option => (
+          {['recent', 'dueDate', 'amount'].map(option => (
             <TouchableOpacity
               key={option}
               style={[styles.filterButton, sortOption === option && styles.filterSelected]}
               onPress={() => setSortOption(option)}
             >
               <Text style={sortOption === option ? styles.filterTextSelected : styles.filterText}>
-                {option === 'dueDate' ? 'Due Date' : 'Amount'}
+                {option === 'recent' ? 'Recent' : option === 'dueDate' ? 'Due Date' : 'Amount'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -134,7 +145,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
 
       <FlatList
         data={displayedFunds}
-        keyExtractor={(item) => item._id?.toString() || item.id?.toString()}
+        keyExtractor={(item) => item._id?.toString() || item.id?.toString() || Math.random().toString()}
         renderItem={renderFundItem}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#007bff']} />}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
@@ -162,7 +173,10 @@ const styles = StyleSheet.create({
   paidBadge: { backgroundColor: '#d4edda' },
   pendingBadge: { backgroundColor: '#fff3cd' },
   overdueBadge: { backgroundColor: '#f8d7da' },
-  statusText: { fontSize: 12, fontWeight: 'bold', color: '#155724' },
+  statusText: { fontSize: 12, fontWeight: 'bold', textTransform: 'capitalize' },
+  paidStatus: { color: '#155724' },
+  pendingStatus: { color: '#856404' },
+  overdueStatus: { color: '#721c24' },
   fundDetails: { marginTop: 8 },
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   amount: { fontSize: 16, fontWeight: 'bold', color: '#333', marginLeft: 8 },
