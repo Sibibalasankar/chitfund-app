@@ -62,24 +62,33 @@ const LoanForm = ({ visible, onClose, users = [], formData, setFormData, onSave,
     }
   };
 
-  const handleSave = async () => {
-    if (!formData.participantId) {
-      Alert.alert("Error", "Please select a participant");
-      return;
-    }
+const handleSave = async () => {
+  if (!formData.participantId) {
+    Alert.alert("Error", "Please select a participant");
+    return;
+  }
 
-    if (isSaving) return;
-    setIsSaving(true);
-
-    try {
-      await onSave(formData);
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to save loan.");
-    } finally {
-      setIsSaving(false);
-    }
+  const payload = {
+    participantId: formData.participantId,
+    principalAmount: parseFloat(formData.principalAmount),
+    interestRate: parseFloat(formData.interestRate),
+    totalInstallments: parseInt(formData.totalInstallments),
+    paidInstallments: parseInt(formData.paidInstallments),
+    installmentAmount: parseFloat(formData.installmentAmount),
+    totalAmount: parseFloat(formData.totalAmount),
+    remainingAmount: parseFloat(formData.remainingAmount),
+    startDate: new Date(formData.startDate),
+    dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+    status: formData.status?.toLowerCase() || "pending"
   };
+
+  try {
+    await onSave(payload);
+    onClose();
+  } catch (err) {
+    Alert.alert("Error", err.message || "Failed to save loan.");
+  }
+};
 
   // Show loading if users are being fetched
   if (loadingUsers) {

@@ -67,33 +67,7 @@ const AdminDashboard = ({ navigation }) => {
 
   const [userSearch, setUserSearch] = useState(""); // ✅ Search state
 
-  // Add this function to handle adding installments
-  // In AdminDashboard component
-  const handleAddInstallment = async (updatedLoan) => {
-    try {
-      // Optimistic UI update
-      setLoans(prevLoans =>
-        prevLoans.map(loan =>
-          loan._id === updatedLoan._id ? updatedLoan : loan
-        )
-      );
 
-      // Then make the API call
-      await updateLoan(updatedLoan._id, {
-        paidInstallments: updatedLoan.paidInstallments
-      });
-
-      Alert.alert("Success", `Added payment for ${updatedLoan.participantName}`);
-    } catch (err) {
-      // Revert on error
-      setLoans(prevLoans =>
-        prevLoans.map(loan =>
-          loan._id === updatedLoan._id ? { ...loan, paidInstallments: loan.paidInstallments - 1 } : loan
-        )
-      );
-      Alert.alert("Error", err.message || "Failed to add payment");
-    }
-  };
   // --- User Handlers ---
   const handleAddUser = () => {
     setEditingUser(null);
@@ -435,10 +409,10 @@ const AdminDashboard = ({ navigation }) => {
               </LinearGradient>
             </TouchableOpacity>
 
-          // In AdminDashboard render
             <LoanList
               loans={loans || []}
               fetchLoans={fetchLoans}
+              updateLoan={updateLoan} // ✅ Add this line
               onEditLoan={handleEditLoan}
               onDeleteLoan={handleDeleteLoan}
               onUpdateStatus={async (id, status, participantName) => {
@@ -449,7 +423,6 @@ const AdminDashboard = ({ navigation }) => {
                   Alert.alert("Error", err.message || "Failed to update loan");
                 }
               }}
-              onAddInstallment={handleAddInstallment} // This should update the state
             />
 
           </View>

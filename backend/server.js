@@ -68,14 +68,7 @@ const Loan = require("./models/Loan");
 /* ===========================
    LOAN ROUTES
 =========================== */
-app.get("/api/loans", async (req, res) => {
-  try {
-    const loans = await Loan.find().populate("participantId", "name phone");
-    res.json(loans);
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+
 // Loan Routes
 app.post("/api/loans", async (req, res) => {
   try {

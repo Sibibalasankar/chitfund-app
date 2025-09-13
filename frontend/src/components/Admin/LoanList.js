@@ -1,9 +1,24 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useState } from "react";
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { 
+  FlatList, 
+  RefreshControl, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  Alert // ✅ Added Alert import
+} from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchLoans, onAddInstallment }) => {
+const LoanList = ({ 
+  loans = [], 
+  onEditLoan, 
+  onDeleteLoan, 
+  onUpdateStatus, 
+  fetchLoans, 
+  updateLoan // ✅ Added updateLoan prop
+}) => {
   const [refreshing, setRefreshing] = useState(false);
 
   const formatCurrency = (amount) => `₹${(amount || 0).toFixed(2)}`;
@@ -27,28 +42,27 @@ const LoanList = ({ loans = [], onEditLoan, onDeleteLoan, onUpdateStatus, fetchL
     }
   }, [fetchLoans]);
 
-const handleAddInstallmentPress = (loan) => {
-  if (!loan || !loan._id) return;
+  const handleAddInstallmentPress = async (loan) => {
+    if (!loan || !loan._id) return;
 
-  if (loan.paidInstallments < loan.totalInstallments) {
-    const newPaidInstallments = loan.paidInstallments + 1;
-    const remainingAmount = loan.installmentAmount * (loan.totalInstallments - newPaidInstallments);
-    
-    // Create updated loan object
-    const updatedLoan = {
-      ...loan,
-      paidInstallments: newPaidInstallments,
-      remainingAmount: remainingAmount,
-      status: newPaidInstallments >= loan.totalInstallments ? "paid" : 
-              newPaidInstallments > 0 ? "partially paid" : "pending"
-    };
-
-    // Update parent state immediately for optimistic UI
-    if (onAddInstallment) {
-      onAddInstallment(updatedLoan);
+    if (loan.paidInstallments < loan.totalInstallments) {
+      const newPaidInstallments = loan.paidInstallments + 1;
+      
+      try {
+        // Update via API first
+        await updateLoan(loan._id, {
+          paidInstallments: newPaidInstallments
+        });
+        
+        // Then refresh the list to get updated data
+        await fetchLoans();
+        
+        Alert.alert("Success", `Added payment for ${loan.participantId?.name}`);
+      } catch (err) {
+        Alert.alert("Error", err.message || "Failed to add payment");
+      }
     }
-  }
-};
+  };
 
   const renderLoanItem = ({ item }) => {
     if (!item) return null;
@@ -188,7 +202,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   loanHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  userName: { fontWeight: "bold", fontSize: 18, color: "#333", flexShrink: 1 },
+  userName: { fontWeight: "bold", fontSize: 18, color: "##333", flexShrink: 1 },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   paidBadge: { backgroundColor: "#d4edda" },
   partialBadge: { backgroundColor: "#fff3cd" },

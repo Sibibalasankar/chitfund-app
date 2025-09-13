@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
-import { FlatList, RefreshControl, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, RefreshControl, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
@@ -9,31 +9,60 @@ const ParticipantDashboard = () => {
   const { user, logout } = useAuth();
   const {
     funds,
+    loans,
     notifications,
     fetchFunds,
+    fetchLoans,
     fetchNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
   } = useData();
+
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshing, setRefreshing] = useState(false);
+  const [loanLoading, setLoanLoading] = useState(false);
 
-  // Filter funds and loans for this user
+  // Filter user-specific data
   const userFunds = funds.filter((f) => f.participantId._id === user._id && f.type !== "loan");
-  const userLoans = funds.filter((f) => f.participantId._id === user._id && f.type === "loan");
-
-  // Compute totals
+  const userLoans = loans.filter((l) => l.participantId._id === user._id);
   const totalPaid = userFunds.filter((f) => f.status === "paid").reduce((sum, f) => sum + f.amount, 0);
   const pendingAmount = userFunds.filter((f) => f.status === "pending" || f.status === "overdue").reduce((sum, f) => sum + f.amount, 0);
 
+  const userNotifications = notifications.filter((n) => n.userId === user._id);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchFunds(), fetchNotifications()]);
+    await Promise.all([fetchFunds(), fetchLoans(), fetchNotifications()]);
     setRefreshing(false);
   }, []);
 
-  const userNotifications = notifications.filter((n) => n.userId === user._id);
+  const formatCurrency = (amount) => {
+    return `₹${amount?.toLocaleString('en-IN') || '0'}`;
+  };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'paid': return '#4CAF50';
+      case 'partially paid': return '#FF9800';
+      case 'pending': return '#F44336';
+      default: return '#666';
+    }
+  };
+
+  const handlePayInstallment = async (loanId) => {
+    Alert.alert(
+      "Pay Installment",
+      "This feature will be implemented soon. Please contact admin for payment.",
+      [{ text: "OK" }]
+    );
+  };
+
+  // Render Functions
   const renderFundItem = ({ item }) => (
     <View
       style={[
@@ -44,7 +73,7 @@ const ParticipantDashboard = () => {
       ]}
     >
       <View style={{ flex: 1 }}>
-        <Text style={styles.fundTitle}>₹{item.amount.toLocaleString()}</Text>
+        <Text style={styles.fundTitle}>₹{(item.amount || 0).toLocaleString()}</Text>
         <View style={styles.statusContainer}>
           <View
             style={[
@@ -56,12 +85,87 @@ const ParticipantDashboard = () => {
           />
           <Text style={styles[item.status]}>{item.status.toUpperCase()}</Text>
         </View>
-        <Text style={styles.fundDate}>Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
-        {item.paymentDate && <Text style={styles.fundDate}>Paid: {new Date(item.paymentDate).toLocaleDateString()}</Text>}
+        <Text style={styles.fundDate}>
+          Due: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : "N/A"}
+        </Text>
+        {item.paymentDate && (
+          <Text style={styles.fundDate}>
+            Paid: {item.paymentDate ? new Date(item.paymentDate).toLocaleDateString() : "N/A"}
+          </Text>
+        )}
       </View>
       {item.status === "pending" && (
         <TouchableOpacity style={styles.payButton}>
           <Text style={styles.payButtonText}>Pay Now</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  const renderLoanItem = ({ item }) => (
+    <View style={styles.loanCard}>
+      <View style={styles.loanHeader}>
+        <Text style={styles.loanAmount}>{formatCurrency(item.totalAmount)}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+          <Text style={styles.statusText}>{item.status}</Text>
+        </View>
+      </View>
+
+      <View style={styles.loanDetails}>
+        <View style={styles.detailRow}>
+          <Ionicons name="cash-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>Principal: {formatCurrency(item.principalAmount)}</Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Ionicons name="percent-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>Interest: {item.interestRate}%</Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Ionicons name="calendar-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>
+            Installments: {item.paidInstallments || 0}/{item.totalInstallments}
+          </Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Ionicons name="wallet-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>
+            Monthly: {formatCurrency(item.installmentAmount)}
+          </Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Ionicons name="time-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>
+            Remaining: {formatCurrency(item.remainingAmount)}
+          </Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Ionicons name="rocket-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>
+            Start Date: {formatDate(item.startDate)}
+          </Text>
+        </View>
+
+        {item.dueDate && (
+          <View style={styles.detailRow}>
+            <Ionicons name="alert-circle-outline" size={16} color="#666" />
+            <Text style={styles.detailText}>
+              Due Date: {formatDate(item.dueDate)}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {item.status !== 'paid' && (
+        <TouchableOpacity 
+          style={styles.payButton}
+          onPress={() => handlePayInstallment(item._id)}
+        >
+          <Text style={styles.payButtonText}>Pay Installment</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -130,24 +234,6 @@ const ParticipantDashboard = () => {
         </View>
       </View>
 
-      {/* Loan Section */}
-      <View style={styles.loanSection}>
-        <Text style={styles.sectionTitle}>My Loans</Text>
-        {userLoans.length > 0 ? (
-          userLoans.map((loan) => (
-            <View key={loan._id} style={styles.loanItem}>
-              <Text style={styles.loanText}>
-                Amount: ₹{loan.amount.toLocaleString()} | Status: {loan.status} | Installments: {loan.paidInstallments}/{loan.totalInstallments}
-              </Text>
-              {loan.dueDate && <Text style={styles.loanDate}>Due: {new Date(loan.dueDate).toLocaleDateString()}</Text>}
-              {loan.paymentDate && <Text style={styles.loanDate}>Paid: {new Date(loan.paymentDate).toLocaleDateString()}</Text>}
-            </View>
-          ))
-        ) : (
-          <Text style={styles.noDataText}>No loans found</Text>
-        )}
-      </View>
-
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Recent Activity</Text>
         {userFunds.slice(0, 3).map((f) => (
@@ -156,8 +242,8 @@ const ParticipantDashboard = () => {
             <View style={styles.activityContent}>
               <Text style={styles.activityText}>
                 {f.status === "paid"
-                  ? `Payment of ₹${f.amount.toLocaleString()} completed`
-                  : `Fund of ₹${f.amount.toLocaleString()} due on ${new Date(f.dueDate).toLocaleDateString()}`}
+                  ? `Payment of ₹${(f.amount || 0).toLocaleString()} completed`
+                  : `Fund of ₹${(f.amount || 0).toLocaleString()} due on ${f.dueDate ? new Date(f.dueDate).toLocaleDateString() : "N/A"}`}
               </Text>
               <Text style={styles.activityTime}>
                 {new Date(f.updatedAt || f.createdAt).toLocaleDateString()}
@@ -165,6 +251,7 @@ const ParticipantDashboard = () => {
             </View>
           </View>
         ))}
+
         {userFunds.length === 0 && <Text style={styles.noDataText}>No recent activity</Text>}
       </View>
     </View>
@@ -196,6 +283,26 @@ const ParticipantDashboard = () => {
           }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           contentContainerStyle={[styles.fundsContainer, userFunds.length === 0 && styles.emptyContainer]}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {activeTab === "loans" && (
+        <FlatList
+          data={userLoans}
+          keyExtractor={(item) => item._id}
+          renderItem={renderLoanItem}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={64} color="#ccc" />
+              <Text style={styles.emptyStateText}>No loans found</Text>
+              <Text style={styles.emptyStateSubtext}>
+                You don't have any active loans at the moment.
+              </Text>
+            </View>
+          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={[styles.loansContainer, userLoans.length === 0 && styles.emptyContainer]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -236,6 +343,10 @@ const ParticipantDashboard = () => {
         <TouchableOpacity style={[styles.tab, activeTab === "funds" && styles.activeTab]} onPress={() => setActiveTab("funds")}>
           <Ionicons name="wallet-outline" size={24} color={activeTab === "funds" ? "#007bff" : "#666"} />
           <Text style={[styles.tabText, activeTab === "funds" && styles.activeTabText]}>My Funds</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tab, activeTab === "loans" && styles.activeTab]} onPress={() => setActiveTab("loans")}>
+          <Ionicons name="cash-outline" size={24} color={activeTab === "loans" ? "#007bff" : "#666"} />
+          <Text style={[styles.tabText, activeTab === "loans" && styles.activeTabText]}>My Loans</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === "notifications" && styles.activeTab]} onPress={() => setActiveTab("notifications")}>
           <Ionicons name="notifications-outline" size={24} color={activeTab === "notifications" ? "#007bff" : "#666"} />
@@ -292,6 +403,55 @@ const styles = StyleSheet.create({
   payButton: { backgroundColor: "#007bff", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 },
   payButtonText: { color: "#fff", fontWeight: "600", fontSize: 12 },
 
+  // Loans
+  loansContainer: { paddingTop: 16, paddingBottom: 80 },
+  loanCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  loanHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  loanAmount: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  loanDetails: {
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  detailText: {
+    marginLeft: 8,
+    color: "#666",
+    fontSize: 14,
+  },
+
   // Notifications
   notificationsContainer: { paddingTop: 16, paddingBottom: 80 },
   notificationsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
@@ -304,19 +464,32 @@ const styles = StyleSheet.create({
   unreadIndicator: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#007bff", marginTop: 6 },
 
   // Tabs
-  tabBar: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#eee", backgroundColor: "#fff", position: "absolute", bottom: 0, left: 0, right: 0, paddingBottom: 8 },
-  tab: { flex: 1, padding: 12, alignItems: "center", justifyContent: "center" },
+  tabBar: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#eee", backgroundColor: "#fff", position: "absolute", bottom: 0, left: 0, right: 0, height: 60 },
+  tab: { flex: 1, justifyContent: "center", alignItems: "center" },
+  tabText: { fontSize: 12, color: "#666", marginTop: 2 },
   activeTab: {},
-  tabText: { color: "#666", fontSize: 12, marginTop: 4 },
   activeTabText: { color: "#007bff", fontWeight: "600" },
-  emptyState: { alignItems: "center", justifyContent: "center", marginTop: 50 },
-  emptyContainer: { flexGrow: 1, justifyContent: "center" },
 
-  // Loans
-  loanSection: { marginTop: 20 },
-  loanItem: { backgroundColor: "#fff", padding: 12, borderRadius: 12, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  loanText: { fontSize: 14, color: "#333", fontWeight: "600" },
-  loanDate: { fontSize: 12, color: "#666" },
+  emptyState: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginTop: 60,
+    paddingHorizontal: 20,
+  },
+  emptyStateText: { 
+    color: "#999", 
+    fontSize: 16, 
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    color: "#999",
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  emptyContainer: { flexGrow: 1, justifyContent: "center" },
 });
 
 export default ParticipantDashboard;
