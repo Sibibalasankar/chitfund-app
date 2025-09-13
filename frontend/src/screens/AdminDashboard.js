@@ -67,7 +67,15 @@ const AdminDashboard = ({ navigation }) => {
 
   const [userSearch, setUserSearch] = useState(""); // ✅ Search state
 
-
+  // Add this function to handle adding installments
+  const handleAddInstallment = async (loanId, newPaidInstallments, participantName) => {
+    try {
+      await updateLoan(loanId, { paidInstallments: newPaidInstallments });
+      Alert.alert("Success", `Added payment for ${participantName}`);
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to add payment");
+    }
+  };
 
   // --- User Handlers ---
   const handleAddUser = () => {
@@ -207,11 +215,11 @@ const AdminDashboard = ({ navigation }) => {
       { text: "Logout", style: "destructive", onPress: () => logout() },
     ]);
   };
-const [loanModalVisible, setLoanModalVisible] = useState(false);
-  const [loanFormData, setLoanFormData] = useState({ 
-    participantId: "", 
-    principalAmount: 0, 
-    interestRate: 0, 
+  const [loanModalVisible, setLoanModalVisible] = useState(false);
+  const [loanFormData, setLoanFormData] = useState({
+    participantId: "",
+    principalAmount: 0,
+    interestRate: 0,
     totalInstallments: 1,
     paidInstallments: 0,
     startDate: "",
@@ -235,10 +243,10 @@ const [loanModalVisible, setLoanModalVisible] = useState(false);
   // --- Loan Handlers ---
   const handleAddLoan = () => {
     setEditingLoan(null);
-    setLoanFormData({ 
-      participantId: "", 
-      principalAmount: 0, 
-      interestRate: 0, 
+    setLoanFormData({
+      participantId: "",
+      principalAmount: 0,
+      interestRate: 0,
       totalInstallments: 1,
       paidInstallments: 0,
       startDate: "",
@@ -303,7 +311,7 @@ const [loanModalVisible, setLoanModalVisible] = useState(false);
   };
 
   // --- Filtered Users ---
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
     user.phone.includes(userSearch) ||
     user.role.toLowerCase().includes(userSearch.toLowerCase())
@@ -354,7 +362,7 @@ const [loanModalVisible, setLoanModalVisible] = useState(false);
 
             <UserList
               users={filteredUsers}
-              loans={loans}  
+              loans={loans}
               onEditUser={handleEditUser}
               onDeleteUser={handleDeleteUser}
               onToggleStatus={toggleUserStatus}
@@ -412,6 +420,7 @@ const [loanModalVisible, setLoanModalVisible] = useState(false);
 
             <LoanList
               loans={loans || []}
+              fetchLoans={fetchLoans}
               onEditLoan={handleEditLoan}
               onDeleteLoan={handleDeleteLoan}
               onUpdateStatus={async (id, status, participantName) => {
@@ -422,6 +431,7 @@ const [loanModalVisible, setLoanModalVisible] = useState(false);
                   Alert.alert("Error", err.message || "Failed to update loan");
                 }
               }}
+              onAddInstallment={handleAddInstallment}
             />
           </View>
         );
@@ -470,11 +480,12 @@ const [loanModalVisible, setLoanModalVisible] = useState(false);
         setFormData={setFormData}
         onSave={handleSaveUser}
       />
-      
+
+      // In your AdminDashboard component, update the LoanForm usage:
       <LoanForm
         visible={loanModalVisible}
         onClose={() => setLoanModalVisible(false)}
-        users={users}
+        users={users} // ✅ Make sure you're passing the users array
         formData={loanFormData}
         setFormData={setLoanFormData}
         onSave={handleSaveLoan}

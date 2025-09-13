@@ -76,39 +76,61 @@ app.get("/api/loans", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
+// Loan Routes
 app.post("/api/loans", async (req, res) => {
   try {
-    const { participantId, amount, interestRate, dueDate } = req.body;
+    const loan = await Loan.create(req.body);
 
-    const loan = new Loan({ participantId, amount, interestRate, dueDate, status: "pending" });
-    await loan.save();
-
-    await User.findByIdAndUpdate(participantId, { $inc: { pendingAmount: amount } });
-    const user = await User.findById(participantId);
-
-    await Notification.create({
-      userId: participantId,
-      phone: user.phone,
-      type: "loan_added",
-      message: `New loan of ₹${amount} added for ${user.name} at ${interestRate}% interest.`,
+    await User.findByIdAndUpdate(loan.participantId, {
+      $inc: { pendingAmount: loan.totalAmount },
     });
 
-    res.status(201).json({ success: true, loan });
+    const user = await User.findById(loan.participantId);
+    await Notification.create({
+      userId: loan.participantId,
+      phone: user.phone,
+      type: "loan",
+      message: `New loan of ₹${loan.totalAmount} added for ${user.name}.`,
+    });
+
+    res.status(201).json(loan);
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    console.error("Error creating loan:", err);
+    res.status(500).json({ message: "Failed to create loan" });
+  }
+});
+
+app.get("/api/loans", async (req, res) => {
+  try {
+    const loans = await Loan.find().populate("participantId", "name phone");
+    res.json(loans);
+  } catch (err) {
+    console.error("Error fetching loans:", err);
+    res.status(500).json({ message: "Failed to fetch loans" });
   }
 });
 
 app.put("/api/loans/:id", async (req, res) => {
   try {
-    const loan = await Loan.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!loan) return res.status(404).json({ success: false, error: "Loan not found" });
+    const loan = await Loan.findById(req.params.id);
+    if (!loan) return res.status(404).json({ message: "Loan not found" });
 
-    // When loan is paid
+    // If paidInstallments updated, recalculate remainingAmount
+    if (req.body.paidInstallments !== undefined) {
+      loan.paidInstallments = req.body.paidInstallments;
+      loan.remainingAmount =
+        loan.installmentAmount *
+        (loan.totalInstallments - loan.paidInstallments);
+    }
+
+    // Update status
+    if (req.body.status) loan.status = req.body.status;
+
+    await loan.save();
+
     if (req.body.status === "paid") {
       await User.findByIdAndUpdate(loan.participantId, {
-        $inc: { totalPaid: loan.amount, pendingAmount: -loan.amount },
+        $inc: { totalPaid: loan.totalAmount, pendingAmount: -loan.remainingAmount },
       });
 
       const user = await User.findById(loan.participantId);
@@ -116,44 +138,36 @@ app.put("/api/loans/:id", async (req, res) => {
         userId: loan.participantId,
         phone: user.phone,
         type: "loan_paid",
-        message: `Loan of ₹${loan.amount} for ${user.name} has been marked as paid.`,
+        message: `Loan of ₹${loan.totalAmount} for ${user.name} has been marked as paid.`,
       });
     }
 
-    res.json({ success: true, loan });
+    res.json(loan);
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    console.error("Error updating loan:", err);
+    res.status(500).json({ message: "Failed to update loan" });
   }
 });
 
 app.delete("/api/loans/:id", async (req, res) => {
   try {
-    const loan = await Loan.findById(req.params.id).populate("participantId", "name phone");
-    if (!loan) return res.status(404).json({ success: false, error: "Loan not found" });
+    const loan = await Loan.findByIdAndDelete(req.params.id);
+    if (!loan) return res.status(404).json({ message: "Loan not found" });
 
-    const participantName = loan.participantId?.name || "Unknown Participant";
-    const participantPhone = loan.participantId?.phone || "N/A";
-    const amount = loan.amount;
-    const interestRate = loan.interestRate;
-    const dueDate = loan.dueDate;
-    const status = loan.status;
-
-    await loan.deleteOne();
-
+    const user = await User.findById(loan.participantId);
     await Notification.create({
-      userId: loan.participantId?._id || null,
-      phone: participantPhone,
+      userId: loan.participantId,
+      phone: user.phone,
       type: "loan_deleted",
-      message: `Loan deleted: Participant: ${participantName}, Amount: ₹${amount}, Interest: ${interestRate}%, Due Date: ${dueDate}, Status: ${status}`,
-      isRead: false,
+      message: `Loan of ₹${loan.totalAmount} for ${user.name} has been deleted.`,
     });
 
-    res.json({ success: true, message: "Loan deleted", loanId: loan._id });
+    res.json({ message: "Loan deleted successfully" });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("Error deleting loan:", err);
+    res.status(500).json({ message: "Failed to delete loan" });
   }
 });
-
 
 /* ===========================
    USER ROUTES

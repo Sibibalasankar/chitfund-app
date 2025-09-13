@@ -1,72 +1,99 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
-const LoanForm = ({
-  visible,
-  onClose,
-  users = [],
-  formData,
-  setFormData,
-  onSave,
-  isEditing,
-  onDelete,
-}) => {
+const LoanForm = ({ visible, onClose, users = [], formData, setFormData, onSave, isEditing, onDelete }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // Auto-calculate installment amount & dueDate
+  // Auto-calculate installment amount and due date
   useEffect(() => {
-    const principal = parseFloat(formData.principalAmount || formData.amount || 0);
-    const interestRate = parseFloat(formData.interestRate || 0);
-    const totalInstallments = parseInt(formData.totalInstallments || 1);
+    if (!formData) return;
 
-    let updatedData = { ...formData };
+    const principal = parseFloat(formData.principalAmount || 0);
+    const rate = parseFloat(formData.interestRate || 0);
+    const installments = parseInt(formData.totalInstallments || 1);
+    const paidInstallments = parseInt(formData.paidInstallments || 0);
 
-    // Calculate installment
-    if (principal && interestRate && totalInstallments) {
-      const totalInterest = principal * (interestRate / 100) * (totalInstallments / 12);
-      const totalAmount = principal + totalInterest;
-      const installmentAmount = parseFloat((totalAmount / totalInstallments).toFixed(2));
-      updatedData.installmentAmount = installmentAmount;
-      updatedData.amount = principal; // Ensure amount field is set
+    let updated = { ...formData };
+
+    if (principal > 0 && installments > 0) {
+      const totalInterest = principal * (rate / 100) * (installments / 12);
+      const total = principal + totalInterest;
+      updated.installmentAmount = parseFloat((total / installments).toFixed(2));
+      updated.amount = principal;
+      updated.totalAmount = total;
+
+      // Calculate remaining amount
+      const remainingInstallments = installments - paidInstallments;
+      updated.remainingAmount = parseFloat((remainingInstallments * (total / installments)).toFixed(2));
     }
 
-    // Auto-calculate dueDate based on startDate + totalInstallments months
-    if (formData.startDate && totalInstallments) {
+    if (formData.startDate && installments > 0) {
       const start = new Date(formData.startDate);
       const due = new Date(start);
-      due.setMonth(due.getMonth() + totalInstallments);
-      updatedData.dueDate = due.toISOString().split('T')[0]; // YYYY-MM-DD
+      due.setMonth(due.getMonth() + installments);
+      updated.dueDate = due.toISOString().split('T')[0];
     }
 
-    setFormData(updatedData);
-  }, [formData.principalAmount, formData.amount, formData.interestRate, formData.totalInstallments, formData.startDate]);
+    // Calculate status
+    if (paidInstallments === 0) {
+      updated.status = "Pending";
+    } else if (paidInstallments >= installments) {
+      updated.status = "Paid";
+    } else {
+      updated.status = "Partially Paid";
+    }
+
+    setFormData(updated);
+  }, [formData.principalAmount, formData.interestRate, formData.totalInstallments, formData.startDate, formData.paidInstallments]);
 
   const handleDelete = () => {
-    Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this loan?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: onDelete },
-      ]
-    );
+    if (onDelete) {
+      Alert.alert(
+        "Confirm Delete",
+        "Are you sure you want to delete this loan?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: onDelete },
+        ]
+      );
+    }
   };
 
-  const computeStatus = () => {
-    if (!formData.paidInstallments || formData.paidInstallments === 0) return 'Pending';
-    if (formData.paidInstallments >= formData.totalInstallments) return 'Paid';
-    return 'Partially Paid';
+  const handleSave = async () => {
+    if (!formData.participantId) {
+      Alert.alert("Error", "Please select a participant");
+      return;
+    }
+
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      await onSave(formData);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to save loan.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // Show loading if users are being fetched
+  if (loadingUsers) {
+    return (
+      <Modal visible={visible} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <ActivityIndicator size="large" color="#007bff" />
+            <Text style={styles.loadingText}>Loading users...</Text>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -75,65 +102,105 @@ const LoanForm = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <ScrollView contentContainerStyle={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>{isEditing ? "Edit Loan" : "Add Loan"}</Text>
+      <View style={styles.modalContainer}>
+        <ScrollView style={styles.modalContent}>
+          <Text style={styles.modalTitle}>
+            {isEditing ? "Edit Loan" : "Add Loan"}
+          </Text>
 
-          {/* Participant */}
           <Text style={styles.label}>Participant:</Text>
-          <ScrollView style={styles.pickerContainer} contentContainerStyle={{ flexGrow: 1 }}>
-            {users.map(user => (
-              <TouchableOpacity
-                key={user._id || user.id}
-                style={[styles.pickerOption, formData.participantId === (user._id || user.id) && styles.pickerSelected]}
-                onPress={() => setFormData({ ...formData, participantId: user._id || user.id })}
-              >
-                <Text style={formData.participantId === (user._id || user.id) ? styles.pickerTextSelected : styles.pickerText}>{user.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
 
-          {/* Principal Amount */}
+          {users.length === 0 ? (
+            <View style={styles.noUsersContainer}>
+              <Text style={styles.noUsersText}>No users available</Text>
+              <Text style={styles.noUsersSubtext}>Please add users first before creating loans</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.pickerContainer}>
+                <ScrollView nestedScrollEnabled>
+                  {users.map(user => (
+                    <TouchableOpacity
+                      key={user._id || user.id}
+                      style={[
+                        styles.pickerOption,
+                        formData.participantId === (user._id || user.id) && styles.pickerSelected
+                      ]}
+                      onPress={() =>
+                        setFormData({
+                          ...formData,
+                          participantId: user._id || user.id,
+                          participantName: user.name,
+                          participantPhone: user.phone
+                        })
+                      }
+                    >
+                      <Text
+                        style={
+                          formData.participantId === (user._id || user.id)
+                            ? styles.pickerTextSelected
+                            : styles.pickerText
+                        }
+                      >
+                        {user.name} - {user.phone}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+
+              {formData.participantId && (
+                <Text style={styles.selectedUser}>
+                  Selected: {formData.participantName} ({formData.participantPhone})
+                </Text>
+              )}
+            </>
+          )}
+
           <Text style={styles.label}>Principal Amount (₹):</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
             placeholder="Enter principal amount"
             placeholderTextColor="#888"
-            value={formData.principalAmount?.toString() || formData.amount?.toString() || ''}
-            onChangeText={text => setFormData({ 
-              ...formData, 
-              principalAmount: parseFloat(text) || 0,
-              amount: parseFloat(text) || 0 
-            })}
+            value={formData.principalAmount?.toString() || ""}
+            onChangeText={text => setFormData({ ...formData, principalAmount: parseFloat(text) || 0 })}
           />
 
-          {/* Interest Rate */}
           <Text style={styles.label}>Interest Rate (% p.a.):</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
             placeholder="Enter interest rate"
             placeholderTextColor="#888"
-            value={formData.interestRate?.toString() || ''}
+            value={formData.interestRate?.toString() || ""}
             onChangeText={text => setFormData({ ...formData, interestRate: parseFloat(text) || 0 })}
           />
 
-          {/* Total Installments */}
           <Text style={styles.label}>Total Installments:</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
             placeholder="Enter total installments"
             placeholderTextColor="#888"
-            value={formData.totalInstallments?.toString() || ''}
+            value={formData.totalInstallments?.toString() || ""}
             onChangeText={text => setFormData({ ...formData, totalInstallments: parseInt(text) || 1 })}
           />
 
-          {/* Start Date */}
+          <Text style={styles.label}>Paid Installments:</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            placeholder="Enter paid installments"
+            placeholderTextColor="#888"
+            value={formData.paidInstallments?.toString() || "0"}
+            onChangeText={text => setFormData({ ...formData, paidInstallments: parseInt(text) || 0 })}
+          />
+
           <Text style={styles.label}>Start Date:</Text>
           <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-            <Text>{formData.startDate || 'Select start date'}</Text>
+            <Text>{formData.startDate || "Select date"}</Text>
           </TouchableOpacity>
 
           {showDatePicker && (
@@ -143,30 +210,17 @@ const LoanForm = ({
               display="default"
               onChange={(event, date) => {
                 setShowDatePicker(false);
-                if (date) setFormData({ ...formData, startDate: date.toISOString().split('T')[0] });
+                if (date) setFormData({ ...formData, startDate: date.toISOString().split("T")[0] });
               }}
             />
           )}
 
-          {/* Auto-calculated installment & dueDate */}
-          <Text style={styles.label}>Installment Amount (₹): {formData.installmentAmount || 0}</Text>
-          <Text style={styles.label}>Due Date: {formData.dueDate || 'Not set'}</Text>
+          <Text style={styles.label}>Installment Amount: ₹{formData.installmentAmount || 0}</Text>
+          <Text style={styles.label}>Total Amount: ₹{formData.totalAmount || 0}</Text>
+          <Text style={styles.label}>Remaining Amount: ₹{formData.remainingAmount || 0}</Text>
+          <Text style={styles.label}>Due Date: {formData.dueDate || "Not set"}</Text>
+          <Text style={styles.label}>Status: {formData.status || "Pending"}</Text>
 
-          {/* Paid Installments */}
-          <Text style={styles.label}>Paid Installments:</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Enter paid installments"
-            placeholderTextColor="#888"
-            value={formData.paidInstallments?.toString() || '0'}
-            onChangeText={text => setFormData({ ...formData, paidInstallments: parseInt(text) || 0 })}
-          />
-
-          {/* Status */}
-          <Text style={styles.label}>Status: {formData.status || computeStatus()}</Text>
-
-          {/* Buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
@@ -178,33 +232,43 @@ const LoanForm = ({
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={() => onSave(formData)}>
-              <Text style={styles.buttonText}>{isEditing ? "Update" : "Save"}</Text>
+            <TouchableOpacity
+              style={[styles.button, styles.saveButton, (!formData.participantId || users.length === 0) && styles.buttonDisabled]}
+              onPress={handleSave}
+              disabled={isSaving || !formData.participantId || users.length === 0}
+            >
+              <Text style={styles.buttonText}>{isSaving ? 'Saving...' : (isEditing ? "Update" : "Save")}</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 20 },
-  modalContent: { backgroundColor: '#fff', borderRadius: 12, padding: 20, width: '100%', maxHeight: '90%' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
-  label: { fontSize: 14, marginBottom: 6, fontWeight: '500' },
-  pickerContainer: { maxHeight: 150, marginBottom: 12, borderWidth: 1, borderColor: '#ddd', borderRadius: 6, padding: 4 },
-  pickerOption: { paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6, marginBottom: 4, backgroundColor: '#f8f9fa' },
-  pickerSelected: { backgroundColor: '#007bff' },
-  pickerText: { color: '#333' },
-  pickerTextSelected: { color: '#fff' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 6, padding: 10, marginBottom: 12, backgroundColor: '#f8f9fa' },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between' },
-  button: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center', marginHorizontal: 5 },
-  cancelButton: { backgroundColor: '#6c757d' },
-  deleteButton: { backgroundColor: '#dc3545' },
-  saveButton: { backgroundColor: '#28a745' },
-  buttonText: { color: '#fff', fontWeight: 'bold' },
+  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)", padding: 20 },
+  modalContent: { backgroundColor: "#fff", borderRadius: 12, padding: 20, width: "100%", maxHeight: "90%" },
+  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 16, textAlign: "center" },
+  loadingText: { marginTop: 16, textAlign: "center", color: "#666" },
+  noUsersContainer: { padding: 16, backgroundColor: "#f8d7da", borderRadius: 6, marginBottom: 12 },
+  noUsersText: { color: "#721c24", fontWeight: "bold", textAlign: "center" },
+  noUsersSubtext: { color: "#721c24", textAlign: "center", marginTop: 4 },
+  label: { fontSize: 14, marginBottom: 6, fontWeight: "500" },
+  pickerContainer: { maxHeight: 150, marginBottom: 12, borderWidth: 1, borderColor: "#ddd", borderRadius: 6, padding: 4 },
+  pickerOption: { paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6, marginBottom: 4, backgroundColor: "#f8f9fa" },
+  pickerSelected: { backgroundColor: "#007bff" },
+  pickerText: { color: "#333" },
+  pickerTextSelected: { color: "#fff" },
+  selectedUser: { marginBottom: 12, padding: 8, backgroundColor: "#e9ecef", borderRadius: 6, fontWeight: "500" },
+  input: { borderWidth: 1, borderColor: "#ddd", borderRadius: 6, padding: 10, marginBottom: 12, backgroundColor: "#f8f9fa" },
+  buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 16 },
+  button: { flex: 1, padding: 12, borderRadius: 8, alignItems: "center", marginHorizontal: 5 },
+  buttonDisabled: { backgroundColor: "#ccc" },
+  cancelButton: { backgroundColor: "#6c757d" },
+  deleteButton: { backgroundColor: "#dc3545" },
+  saveButton: { backgroundColor: "#28a745" },
+  buttonText: { color: "#fff", fontWeight: "bold" },
 });
 
 export default LoanForm;
