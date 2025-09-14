@@ -1,26 +1,26 @@
 {
   "expo": {
-    "name": "Chitfund",
-    "slug": "Chitfund",
-    "version": "1.0.0",
+    "name": "Chitfund", // ✅ Good
+    "slug": "Chitfund", 
+    "version": "1.0.1", 
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "scheme": "mynewapp",
+    "icon": "./assets/icon.png", // ✅ Good (make sure file exists)
+    "scheme": "chitfund", // ✅ Good
     "userInterfaceStyle": "automatic",
     // "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 3, // 🔧 Increment (2 → 3) for a new APK/Play Store update
+      "package": "com.sibi5161.chitfund", // 🔧 Change to lowercase (Android best practice)
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/icon.png",
-        "backgroundImage": "./assets/icon.png",
-        "monochromeImage": "./assets/icon.png"
+        "backgroundColor": "#E6F4FE"
+        // ❌ Remove backgroundImage & monochromeImage if they are same as foreground
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.sibi5161.MyNewApp"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
