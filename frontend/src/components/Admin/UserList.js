@@ -1,9 +1,17 @@
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { 
+  FlatList, 
+  RefreshControl, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  View 
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const UserList = ({ 
   users = [], 
-  loans = [], // new prop for loans
+  loans = [], 
+  funds = [], // ✅ funds passed here
   refreshing, 
   onRefresh, 
   onEditUser, 
@@ -12,18 +20,37 @@ const UserList = ({
 }) => {
 
   const renderUserItem = ({ item }) => {
-    // Get loans corresponding to this user
-    const userLoans = loans.filter(loan => 
-      loan.participantId?._id === item._id || loan.participantId === item._id
+    // Filter loans for this user
+    const userLoans = loans.filter(
+      (loan) => loan.participantId?._id === item._id || loan.participantId === item._id
     );
 
+    // Filter funds for this user
+    const userFunds = funds.filter(
+      (fund) => fund.participantId?._id === item._id || fund.participantId === item._id
+    );
+
+    // ✅ Combine Loans + Funds for Paid & Pending Calculation
+    const totalPaid =
+      userLoans.reduce((sum, loan) => sum + (loan.totalPaid || 0), 0) +
+      userFunds.filter(f => f.status === "paid").reduce((sum, f) => sum + (f.amount || 0), 0);
+
+    const pendingAmount =
+      userLoans.reduce((sum, loan) => sum + (loan.pendingAmount || 0), 0) +
+      userFunds.filter(f => f.status === "pending").reduce((sum, f) => sum + (f.amount || 0), 0);
+
     return (
-      <View style={[styles.listItem, item.status === 'inactive' && styles.inactiveItem]}>
+      <View style={[styles.listItem, item.status === "inactive" && styles.inactiveItem]}>
         <View style={styles.itemContent}>
           {/* User Header */}
           <View style={styles.userHeader}>
             <Text style={styles.itemTitle}>{item.name}</Text>
-            <View style={[styles.statusBadge, item.status === 'active' ? styles.activeBadge : styles.inactiveBadge]}>
+            <View
+              style={[
+                styles.statusBadge,
+                item.status === "active" ? styles.activeBadge : styles.inactiveBadge,
+              ]}
+            >
               <Text style={styles.statusText}>{item.status}</Text>
             </View>
           </View>
@@ -47,29 +74,30 @@ const UserList = ({
               </View>
             )}
 
-            {/* Financial Info */}
+            {/* ✅ Financial Info */}
             <View style={styles.financialInfo}>
               <View style={styles.amountContainer}>
                 <Icon name="account-balance-wallet" size={16} color="#28a745" />
-                <Text style={styles.amountText}>₹{item.totalPaid || 0}</Text>
+                <Text style={styles.amountText}>₹{totalPaid}</Text>
                 <Text style={styles.amountLabel}>Paid</Text>
               </View>
 
               <View style={styles.amountContainer}>
                 <Icon name="pending-actions" size={16} color="#dc3545" />
-                <Text style={styles.amountText}>₹{item.pendingAmount || 0}</Text>
+                <Text style={styles.amountText}>₹{pendingAmount}</Text>
                 <Text style={styles.amountLabel}>Pending</Text>
               </View>
             </View>
 
-            {/* Loans */}
+            {/* Loans List */}
             {userLoans.length > 0 && (
               <View style={styles.loansContainer}>
                 <Text style={styles.loansTitle}>Loans:</Text>
-                {userLoans.map(loan => (
+                {userLoans.map((loan) => (
                   <View key={loan._id} style={styles.loanRow}>
                     <Text style={styles.loanText}>
-                      ₹{loan.principalAmount} | {loan.status} | Installments: {loan.paidInstallments}/{loan.totalInstallments}
+                      ₹{loan.principalAmount} | {loan.status} | Installments:{" "}
+                      {loan.paidInstallments}/{loan.totalInstallments}
                     </Text>
                   </View>
                 ))}
@@ -80,13 +108,22 @@ const UserList = ({
 
         {/* Action Buttons */}
         <View style={styles.itemActions}>
-          <TouchableOpacity style={[styles.actionButton, styles.editButton]} onPress={() => onEditUser(item)}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.editButton]}
+            onPress={() => onEditUser(item)}
+          >
             <Icon name="edit" size={18} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.statusButton]} onPress={() => onToggleStatus(item)}>
-            <Icon name={item.status === 'active' ? 'pause' : 'play-arrow'} size={18} color="#fff" />
+          <TouchableOpacity
+            style={[styles.actionButton, styles.statusButton]}
+            onPress={() => onToggleStatus(item)}
+          >
+            <Icon name={item.status === "active" ? "pause" : "play-arrow"} size={18} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={() => onDeleteUser(item._id || item.id, item.name)}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={() => onDeleteUser(item._id || item.id, item.name)}
+          >
             <Icon name="delete" size={18} color="#fff" />
           </TouchableOpacity>
         </View>

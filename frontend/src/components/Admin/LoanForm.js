@@ -7,47 +7,59 @@ const LoanForm = ({ visible, onClose, users = [], formData, setFormData, onSave,
   const [isSaving, setIsSaving] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // Auto-calculate installment amount and due date
+  // Auto-calculate installment, total amount, remaining, due date, and status
   useEffect(() => {
     if (!formData) return;
 
     const principal = parseFloat(formData.principalAmount || 0);
-    const rate = parseFloat(formData.interestRate || 0);
-    const installments = parseInt(formData.totalInstallments || 1);
+    const annualRate = parseFloat(formData.interestRate || 0); // <-- Interest entered as % per annum
+    const monthlyRate = annualRate / 12; // ✅ Convert to monthly rate
+    const totalInstallments = parseInt(formData.totalInstallments || 1);
     const paidInstallments = parseInt(formData.paidInstallments || 0);
 
     let updated = { ...formData };
 
-    if (principal > 0 && installments > 0) {
-      const totalInterest = principal * (rate / 100) * (installments / 12);
-      const total = principal + totalInterest;
-      updated.installmentAmount = parseFloat((total / installments).toFixed(2));
-      updated.amount = principal;
-      updated.totalAmount = total;
+    if (principal > 0 && totalInstallments > 0) {
+      // ✅ Monthly interest simple calculation
+      const totalInterest = principal * (monthlyRate / 100) * totalInstallments;
+      const totalAmount = principal + totalInterest;
+      const installment = totalAmount / totalInstallments;
 
-      // Calculate remaining amount
-      const remainingInstallments = installments - paidInstallments;
-      updated.remainingAmount = parseFloat((remainingInstallments * (total / installments)).toFixed(2));
+      updated.totalAmount = parseFloat(totalAmount.toFixed(2));
+      updated.installmentAmount = parseFloat(installment.toFixed(2));
+      updated.amount = parseFloat(principal.toFixed(2));
+
+      // Remaining amount
+      const remainingInstallments = totalInstallments - paidInstallments;
+      updated.remainingAmount = parseFloat((installment * remainingInstallments).toFixed(2));
     }
 
-    if (formData.startDate && installments > 0) {
+    // ✅ Due Date Calculation: startDate + totalInstallments months
+    if (formData.startDate && totalInstallments > 0) {
       const start = new Date(formData.startDate);
       const due = new Date(start);
-      due.setMonth(due.getMonth() + installments);
+      due.setMonth(due.getMonth() + totalInstallments);
       updated.dueDate = due.toISOString().split('T')[0];
     }
 
-    // Calculate status
+    // ✅ Status
     if (paidInstallments === 0) {
       updated.status = "Pending";
-    } else if (paidInstallments >= installments) {
+    } else if (paidInstallments >= totalInstallments) {
       updated.status = "Paid";
     } else {
       updated.status = "Partially Paid";
     }
 
     setFormData(updated);
-  }, [formData.principalAmount, formData.interestRate, formData.totalInstallments, formData.startDate, formData.paidInstallments]);
+  }, [
+    formData.principalAmount,
+    formData.interestRate,
+    formData.totalInstallments,
+    formData.startDate,
+    formData.paidInstallments
+  ]);
+
 
   const handleDelete = () => {
     if (onDelete) {
@@ -68,29 +80,46 @@ const handleSave = async () => {
     return;
   }
 
+  if (!formData.startDate) {
+    Alert.alert("Error", "Please select a start date");
+    return;
+  }
+
+  // Calculate paid and pending amounts before saving
+  const paidInstallments = parseInt(formData.paidInstallments || 0);
+  const totalInstallments = parseInt(formData.totalInstallments || 1);
+  const installmentAmount = parseFloat(formData.installmentAmount || 0);
+
+  const totalPaid = parseFloat((paidInstallments * installmentAmount).toFixed(2));
+  const pendingAmount = parseFloat(((totalInstallments - paidInstallments) * installmentAmount).toFixed(2));
+
   const payload = {
     participantId: formData.participantId,
     principalAmount: parseFloat(formData.principalAmount),
     interestRate: parseFloat(formData.interestRate),
-    totalInstallments: parseInt(formData.totalInstallments),
-    paidInstallments: parseInt(formData.paidInstallments),
-    installmentAmount: parseFloat(formData.installmentAmount),
+    totalInstallments,
+    paidInstallments,
+    installmentAmount,
     totalAmount: parseFloat(formData.totalAmount),
-    remainingAmount: parseFloat(formData.remainingAmount),
+    remainingAmount: pendingAmount,
+    totalPaid,
+    pendingAmount,
     startDate: new Date(formData.startDate),
     dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-    status: formData.status?.toLowerCase() || "pending"
+    status: formData.status?.toLowerCase() || "pending",
   };
+
+  console.log("Sending loan data:", payload);
 
   try {
     await onSave(payload);
     onClose();
   } catch (err) {
+    console.error("Add Loan Error details:", err);
     Alert.alert("Error", err.message || "Failed to save loan.");
   }
 };
 
-  // Show loading if users are being fetched
   if (loadingUsers) {
     return (
       <Modal visible={visible} transparent animationType="slide">
@@ -157,7 +186,6 @@ const handleSave = async () => {
                   ))}
                 </ScrollView>
               </View>
-
 
               {formData.participantId && (
                 <Text style={styles.selectedUser}>

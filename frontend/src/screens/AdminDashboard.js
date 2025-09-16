@@ -354,6 +354,7 @@ const AdminDashboard = ({ navigation }) => {
             <UserList
               users={filteredUsers}
               loans={loans}
+              funds={funds}
               onEditUser={handleEditUser}
               onDeleteUser={handleDeleteUser}
               onToggleStatus={toggleUserStatus}
