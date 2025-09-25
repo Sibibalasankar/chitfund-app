@@ -291,7 +291,7 @@ app.post("/api/funds", async (req, res) => {
 
 app.put("/api/funds/:id", async (req, res) => {
   try {
-    const fund = await Fund.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    let fund = await Fund.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!fund) return res.status(404).json({ success: false, error: "Fund not found" });
 
     if (req.body.status === "paid") {
@@ -304,9 +304,12 @@ app.put("/api/funds/:id", async (req, res) => {
         userId: fund.participantId,
         phone: user.phone,
         type: "payment_received",
-        message: `Payment of $${fund.amount} received from ${user.name}.`,
+        message: `Payment of ₹${fund.amount} received from ${user.name}.`,
       });
     }
+
+    // 🔥 Populate before sending back
+    fund = await Fund.findById(fund._id).populate("participantId", "name phone");
 
     res.json({ success: true, fund });
   } catch (err) {
