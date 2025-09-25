@@ -70,50 +70,6 @@ const Loan = require("./models/Loan");
 =========================== */
 
 // Loan Routes
-app.put("/api/funds/:id", async (req, res) => {
-  try {
-    const { status, amount, dueDate } = req.body;
-
-    // 1️⃣ Validate input
-    if (!status && !amount && !dueDate) {
-      return res.status(400).json({ success: false, error: "No valid fields to update" });
-    }
-
-    // 2️⃣ Fetch the fund first
-    let fund = await Fund.findById(req.params.id);
-    if (!fund) return res.status(404).json({ success: false, error: "Fund not found" });
-
-    // 3️⃣ Update fund fields
-    if (status) fund.status = status;
-    if (amount !== undefined) fund.amount = amount;
-    if (dueDate) fund.dueDate = dueDate;
-
-    // 4️⃣ Handle payment updates
-    if (status === "paid" && fund.status !== "paid") {
-      await User.findByIdAndUpdate(fund.participantId, {
-        $inc: { totalPaid: fund.amount, pendingAmount: -fund.amount },
-      });
-
-      const user = await User.findById(fund.participantId);
-      await Notification.create({
-        userId: fund.participantId,
-        phone: user.phone,
-        type: "payment_received",
-        message: `Payment of ₹${fund.amount} received from ${user.name}.`,
-      });
-    }
-
-    await fund.save();
-
-    // 5️⃣ Populate before sending response
-    fund = await Fund.findById(fund._id).populate("participantId", "name phone");
-
-    res.json({ success: true, fund });
-  } catch (err) {
-    console.error("Error updating fund:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
 
 
 app.get("/api/loans", async (req, res) => {
@@ -314,10 +270,16 @@ app.post("/api/funds", async (req, res) => {
 
 app.put("/api/funds/:id", async (req, res) => {
   try {
-    let fund = await Fund.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { status, amount, dueDate } = req.body;
+
+    let fund = await Fund.findById(req.params.id);
     if (!fund) return res.status(404).json({ success: false, error: "Fund not found" });
 
-    if (req.body.status === "paid") {
+    if (status) fund.status = status;
+    if (amount !== undefined) fund.amount = amount;
+    if (dueDate) fund.dueDate = dueDate;
+
+    if (status === "paid" && fund.status !== "paid") {
       await User.findByIdAndUpdate(fund.participantId, {
         $inc: { totalPaid: fund.amount, pendingAmount: -fund.amount },
       });
@@ -331,7 +293,9 @@ app.put("/api/funds/:id", async (req, res) => {
       });
     }
 
-    // 🔥 Populate before sending back
+    await fund.save();
+
+    // ✅ Populate before sending back
     fund = await Fund.findById(fund._id).populate("participantId", "name phone");
 
     res.json({ success: true, fund });
