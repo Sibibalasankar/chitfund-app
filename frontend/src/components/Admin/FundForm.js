@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Alert,
   Modal,
@@ -24,6 +24,11 @@ const FundForm = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Ensure formData stays synced when opening the modal
+  useEffect(() => {
+    if (!visible) setIsSaving(false);
+  }, [visible]);
+
   const handleDelete = () => {
     if (onDelete) {
       Alert.alert(
@@ -42,7 +47,8 @@ const FundForm = ({
     setIsSaving(true);
 
     try {
-      await onSave(formData);
+      const updatedFund = await onSave(formData); // <-- save & get updated fund from backend
+      setFormData(updatedFund);                   // <-- keep formData synced
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to save fund.");
@@ -108,8 +114,9 @@ const FundForm = ({
           <Text style={styles.label}>Status:</Text>
           <View style={styles.radioGroup}>
             <TouchableOpacity
-              style={[styles.radioButton, formData.status === 'pending' && styles.radioSelected]}
-              onPress={() => setFormData({ ...formData, status: 'pending' })}
+              style={[styles.radioButton, formData.status === 'pending' && styles.radioSelected, formData.status === 'paid' && styles.disabledRadio]}
+              onPress={() => formData.status !== 'paid' && setFormData({ ...formData, status: 'pending' })}
+              disabled={formData.status === 'paid'} // Prevent changing back to pending
             >
               <Text style={formData.status === 'pending' ? styles.radioTextSelected : styles.radioText}>Pending</Text>
             </TouchableOpacity>
@@ -156,6 +163,7 @@ const styles = StyleSheet.create({
   radioGroup: { flexDirection: 'row', marginBottom: 16 },
   radioButton: { flex: 1, padding: 10, marginRight: 8, borderRadius: 6, borderWidth: 1, borderColor: '#ddd', alignItems: 'center', backgroundColor: '#f8f9fa' },
   radioSelected: { backgroundColor: '#007bff', borderColor: '#007bff' },
+  disabledRadio: { opacity: 0.5 },
   radioText: { color: '#333', fontWeight: '500' },
   radioTextSelected: { color: '#fff', fontWeight: '500' },
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between' },

@@ -1,12 +1,21 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFund }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortOption, setSortOption] = useState('recent'); // default sort
   const [sortOrder, setSortOrder] = useState('desc'); // recently added first
+  const [loadingId, setLoadingId] = useState(null); // 🔥 loader state
 
   const displayedFunds = useMemo(() => {
     let filtered = [...funds];
@@ -20,16 +29,14 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
         return sortOrder === 'asc' ? a.amount - b.amount : b.amount - a.amount;
       }
       else if (sortOption === 'dueDate') {
-        // Sort by due date
         return sortOrder === 'asc'
           ? new Date(a.dueDate) - new Date(b.dueDate)
           : new Date(b.dueDate) - new Date(a.dueDate);
       }
       else {
-        // Default: recently added first (sort by createdAt or _id as fallback)
         const dateA = a.createdAt || a._id || 0;
         const dateB = b.createdAt || b._id || 0;
-        
+
         return sortOrder === 'asc'
           ? new Date(dateA) - new Date(dateB)
           : new Date(dateB) - new Date(dateA);
@@ -42,6 +49,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
   const renderFundItem = ({ item }) => (
     <View style={styles.listItem}>
       <View style={{ flex: 1 }}>
+        {/* Header */}
         <View style={styles.fundHeader}>
           <Text style={styles.itemTitle}>{item.participantId?.name || "Unknown"}</Text>
           <View
@@ -58,6 +66,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
           </View>
         </View>
 
+        {/* Details */}
         <View style={styles.fundDetails}>
           <View style={styles.detailRow}>
             <Icon name="attach-money" size={16} color="#333" />
@@ -84,6 +93,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
           )}
         </View>
 
+        {/* Buttons */}
         <View style={styles.buttonRow}>
           <TouchableOpacity onPress={() => onEditFund(item)} style={styles.editButton}>
             <Icon name="edit" size={18} color="#fff" />
@@ -91,10 +101,32 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
           </TouchableOpacity>
 
           {item.status === 'pending' && (
-            <TouchableOpacity onPress={() => onUpdateStatus(item._id || item.id, 'paid', item.participantId?.name || "Unknown")}>
-              <LinearGradient colors={['#28a745', '#81c784']} style={styles.payButton}>
-                <Icon name="check" size={20} color="#fff" />
-                <Text style={styles.payButtonText}>Mark Paid</Text>
+            <TouchableOpacity
+              disabled={loadingId === item._id}
+              onPress={async () => {
+                try {
+                  setLoadingId(item._id);
+                  await onUpdateStatus(item._id || item.id, 'paid', item.participantId?.name || "Unknown");
+                } finally {
+                  setLoadingId(null);
+                }
+              }}
+            >
+              <LinearGradient
+                colors={['#28a745', '#81c784']}
+                style={[
+                  styles.payButton,
+                  loadingId === item._id && { opacity: 0.7 }
+                ]}
+              >
+                {loadingId === item._id ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Icon name="check" size={20} color="#fff" />
+                    <Text style={styles.payButtonText}>Mark Paid</Text>
+                  </>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           )}
@@ -105,6 +137,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
 
   return (
     <View style={styles.container}>
+      {/* Filter + Sort bar */}
       <View style={styles.filterSortBar}>
         <View style={styles.filterGroup}>
           <Text style={styles.filterLabel}>Filter:</Text>
@@ -143,6 +176,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
         </View>
       </View>
 
+      {/* Fund list */}
       <FlatList
         data={displayedFunds}
         keyExtractor={(item) => item._id?.toString() || item.id?.toString() || Math.random().toString()}
@@ -174,14 +208,10 @@ const styles = StyleSheet.create({
   pendingBadge: { backgroundColor: '#fff3cd' },
   overdueBadge: { backgroundColor: '#f8d7da' },
   statusText: { fontSize: 12, fontWeight: 'bold', textTransform: 'capitalize' },
-  paidStatus: { color: '#155724' },
-  pendingStatus: { color: '#856404' },
-  overdueStatus: { color: '#721c24' },
   fundDetails: { marginTop: 8 },
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   amount: { fontSize: 16, fontWeight: 'bold', color: '#333', marginLeft: 8 },
   detailText: { marginLeft: 8, fontSize: 14, color: '#666' },
-
   buttonRow: { flexDirection: 'row', marginTop: 12, alignItems: 'center' },
   editButton: {
     flexDirection: 'row',
@@ -193,7 +223,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   editButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 6 },
-
   payButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,7 +231,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   payButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 6 },
-
   filterSortBar: { paddingVertical: 8, marginBottom: 8, paddingLeft: 16, paddingRight: 8 },
   filterGroup: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 },
   sortGroup: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
