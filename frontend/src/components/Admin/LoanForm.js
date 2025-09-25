@@ -74,51 +74,57 @@ const LoanForm = ({ visible, onClose, users = [], formData, setFormData, onSave,
     }
   };
 
-const handleSave = async () => {
-  if (!formData.participantId) {
-    Alert.alert("Error", "Please select a participant");
-    return;
-  }
+  const handleSave = async () => {
+    if (isSaving) return; // ✅ Prevent double taps
 
-  if (!formData.startDate) {
-    Alert.alert("Error", "Please select a start date");
-    return;
-  }
+    if (!formData.participantId) {
+      Alert.alert("Error", "Please select a participant");
+      return;
+    }
 
-  // Calculate paid and pending amounts before saving
-  const paidInstallments = parseInt(formData.paidInstallments || 0);
-  const totalInstallments = parseInt(formData.totalInstallments || 1);
-  const installmentAmount = parseFloat(formData.installmentAmount || 0);
+    if (!formData.startDate) {
+      Alert.alert("Error", "Please select a start date");
+      return;
+    }
 
-  const totalPaid = parseFloat((paidInstallments * installmentAmount).toFixed(2));
-  const pendingAmount = parseFloat(((totalInstallments - paidInstallments) * installmentAmount).toFixed(2));
+    setIsSaving(true); // ✅ lock button
 
-  const payload = {
-    participantId: formData.participantId,
-    principalAmount: parseFloat(formData.principalAmount),
-    interestRate: parseFloat(formData.interestRate),
-    totalInstallments,
-    paidInstallments,
-    installmentAmount,
-    totalAmount: parseFloat(formData.totalAmount),
-    remainingAmount: pendingAmount,
-    totalPaid,
-    pendingAmount,
-    startDate: new Date(formData.startDate),
-    dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-    status: formData.status?.toLowerCase() || "pending",
+    // Calculate paid and pending amounts before saving
+    const paidInstallments = parseInt(formData.paidInstallments || 0);
+    const totalInstallments = parseInt(formData.totalInstallments || 1);
+    const installmentAmount = parseFloat(formData.installmentAmount || 0);
+
+    const totalPaid = parseFloat((paidInstallments * installmentAmount).toFixed(2));
+    const pendingAmount = parseFloat(((totalInstallments - paidInstallments) * installmentAmount).toFixed(2));
+
+    const payload = {
+      participantId: formData.participantId,
+      principalAmount: parseFloat(formData.principalAmount),
+      interestRate: parseFloat(formData.interestRate),
+      totalInstallments,
+      paidInstallments,
+      installmentAmount,
+      totalAmount: parseFloat(formData.totalAmount),
+      remainingAmount: pendingAmount,
+      totalPaid,
+      pendingAmount,
+      startDate: new Date(formData.startDate),
+      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+      status: formData.status?.toLowerCase() || "pending",
+    };
+
+    console.log("Sending loan data:", payload);
+
+    try {
+      await onSave(payload);
+      onClose();
+    } catch (err) {
+      console.error("Add Loan Error details:", err);
+      Alert.alert("Error", err.message || "Failed to save loan.");
+    } finally {
+      setIsSaving(false); // ✅ unlock after request completes
+    }
   };
-
-  console.log("Sending loan data:", payload);
-
-  try {
-    await onSave(payload);
-    onClose();
-  } catch (err) {
-    console.error("Add Loan Error details:", err);
-    Alert.alert("Error", err.message || "Failed to save loan.");
-  }
-};
 
   if (loadingUsers) {
     return (
@@ -270,12 +276,19 @@ const handleSave = async () => {
             )}
 
             <TouchableOpacity
-              style={[styles.button, styles.saveButton, (!formData.participantId || users.length === 0) && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                styles.saveButton,
+                (isSaving || !formData.participantId || users.length === 0) && styles.buttonDisabled
+              ]}
               onPress={handleSave}
               disabled={isSaving || !formData.participantId || users.length === 0}
             >
-              <Text style={styles.buttonText}>{isSaving ? 'Saving...' : (isEditing ? "Update" : "Save")}</Text>
+              <Text style={styles.buttonText}>
+                {isSaving ? (isEditing ? "Updating..." : "Saving...") : (isEditing ? "Update" : "Save")}
+              </Text>
             </TouchableOpacity>
+
           </View>
         </ScrollView>
       </View>
