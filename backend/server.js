@@ -265,9 +265,10 @@ app.get("/api/funds", async (req, res) => {
 app.post("/api/funds", async (req, res) => {
   try {
     const { participantId, amount, dueDate } = req.body;
-    const fund = new Fund({ participantId, amount, dueDate, status: "pending" });
+    let fund = new Fund({ participantId, amount, dueDate, status: "pending" });
     await fund.save();
 
+    // Update user's pending amount
     await User.findByIdAndUpdate(participantId, { $inc: { pendingAmount: amount } });
     const user = await User.findById(participantId);
 
@@ -275,14 +276,18 @@ app.post("/api/funds", async (req, res) => {
       userId: participantId,
       phone: user.phone,
       type: "fund_added",
-      message: `New fund of $${amount} added for ${user.name}.`,
+      message: `New fund of ₹${amount} added for ${user.name}.`,
     });
+
+    // 🔥 Populate before sending back
+    fund = await Fund.findById(fund._id).populate("participantId", "name phone");
 
     res.status(201).json({ success: true, fund });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
+
 
 app.put("/api/funds/:id", async (req, res) => {
   try {
