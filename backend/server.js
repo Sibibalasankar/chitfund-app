@@ -78,23 +78,30 @@ app.post("/api/loans", async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
-    const installmentAmount = principalAmount / totalInstallments;
+    // Calculate totals
+    const totalAmount = principalAmount + (principalAmount * (interestRate || 0) / 100);
+    const installmentAmount = totalAmount / totalInstallments;
+    const dueDate = new Date(startDate || Date.now());
+    dueDate.setMonth(dueDate.getMonth() + totalInstallments);
 
     let loan = new Loan({
       participantId,
       principalAmount,
-      totalInstallments,
       interestRate: interestRate || 0,
-      installmentAmount,
+      totalInstallments,
       paidInstallments: 0,
-      remainingAmount: principalAmount,
-      startDate: startDate || new Date(),   // ✅ auto set
+      installmentAmount,
+      totalAmount,
+      remainingAmount: totalAmount,
+      startDate: startDate || new Date(),
+      dueDate,
       status: "pending",
     });
 
     await loan.save();
     loan = await Loan.findById(loan._id).populate("participantId", "name phone");
 
+    // Create notification
     const user = await User.findById(participantId);
     await Notification.create({
       userId: participantId,
