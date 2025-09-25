@@ -143,6 +143,47 @@ app.delete("/api/loans/:id", async (req, res) => {
     res.status(500).json({ message: "Failed to delete loan" });
   }
 });
+app.post("/api/loans", async (req, res) => {
+  try {
+    const { participantId, totalAmount, totalInstallments, interestRate } = req.body;
+
+    if (!participantId || !totalAmount || !totalInstallments) {
+      return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+
+    const installmentAmount = totalAmount / totalInstallments;
+
+    let loan = new Loan({
+      participantId,
+      totalAmount,
+      totalInstallments,
+      interestRate: interestRate || 0,
+      installmentAmount,
+      paidInstallments: 0,
+      remainingAmount: totalAmount,
+      status: "pending",
+    });
+
+    await loan.save();
+
+    // populate participant info before sending
+    loan = await Loan.findById(loan._id).populate("participantId", "name phone");
+
+    // Create notification
+    const user = await User.findById(participantId);
+    await Notification.create({
+      userId: participantId,
+      phone: user.phone,
+      type: "loan_added",
+      message: `New loan of ₹${totalAmount} assigned to ${user.name}.`,
+    });
+
+    res.status(201).json({ success: true, loan });
+  } catch (err) {
+    console.error("Error adding loan:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 /* ===========================
    USER ROUTES

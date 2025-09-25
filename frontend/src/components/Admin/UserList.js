@@ -11,7 +11,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 const UserList = ({
   users = [],
   loans = [],
-  funds = [], // ✅ funds passed here
+  funds = [],
   refreshing,
   onRefresh,
   onEditUser,
@@ -20,37 +20,38 @@ const UserList = ({
 }) => {
 
   const renderUserItem = ({ item }) => {
-    const userLoans = loans.filter(
-      (loan) => loan?.participantId?._id === item._id || loan?.participantId === item._id
+    if (!item) return null; // Guard against undefined users
+
+    // Filter valid loans/funds and ensure participantId exists
+    const userLoans = (loans || []).filter(
+      loan => loan?.participantId?._id === item._id || loan?.participantId === item._id
     );
 
-    const userFunds = funds.filter(
-      (fund) => fund?.participantId?._id === item._id || fund?.participantId === item._id
+    const userFunds = (funds || []).filter(
+      fund => fund?.participantId?._id === item._id || fund?.participantId === item._id
     );
 
-
-    // ✅ Combine Loans + Funds for Paid & Pending Calculation
     const totalPaid =
-      userLoans.reduce((sum, loan) => sum + (loan.totalPaid || 0), 0) +
-      userFunds.filter(f => f.status === "paid").reduce((sum, f) => sum + (f.amount || 0), 0);
+      userLoans.reduce((sum, loan) => sum + (loan?.totalPaid || 0), 0) +
+      userFunds.filter(f => f?.status === "paid").reduce((sum, f) => sum + (f?.amount || 0), 0);
 
     const pendingAmount =
-      userLoans.reduce((sum, loan) => sum + (loan.pendingAmount || 0), 0) +
-      userFunds.filter(f => f.status === "pending").reduce((sum, f) => sum + (f.amount || 0), 0);
+      userLoans.reduce((sum, loan) => sum + (loan?.pendingAmount || 0), 0) +
+      userFunds.filter(f => f?.status === "pending").reduce((sum, f) => sum + (f?.amount || 0), 0);
 
     return (
       <View style={[styles.listItem, item.status === "inactive" && styles.inactiveItem]}>
         <View style={styles.itemContent}>
           {/* User Header */}
           <View style={styles.userHeader}>
-            <Text style={styles.itemTitle}>{item.name}</Text>
+            <Text style={styles.itemTitle}>{item.name || "Unknown"}</Text>
             <View
               style={[
                 styles.statusBadge,
                 item.status === "active" ? styles.activeBadge : styles.inactiveBadge,
               ]}
             >
-              <Text style={styles.statusText}>{item.status}</Text>
+              <Text style={styles.statusText}>{item.status || "N/A"}</Text>
             </View>
           </View>
 
@@ -58,22 +59,24 @@ const UserList = ({
           <View style={styles.userDetails}>
             <View style={styles.detailRow}>
               <Icon name="phone" size={16} color="#666" />
-              <Text style={styles.detailText}>{item.phone}</Text>
+              <Text style={styles.detailText}>{item.phone || "N/A"}</Text>
             </View>
 
             <View style={styles.detailRow}>
               <Icon name="person" size={16} color="#666" />
-              <Text style={styles.detailText}>{item.role}</Text>
+              <Text style={styles.detailText}>{item.role || "N/A"}</Text>
             </View>
 
             {item.joinedDate && (
               <View style={styles.detailRow}>
                 <Icon name="calendar-today" size={16} color="#666" />
-                <Text style={styles.detailText}>Joined: {item.joinedDate}</Text>
+                <Text style={styles.detailText}>
+                  Joined: {new Date(item.joinedDate).toLocaleDateString()}
+                </Text>
               </View>
             )}
 
-            {/* ✅ Financial Info */}
+            {/* Financial Info */}
             <View style={styles.financialInfo}>
               <View style={styles.amountContainer}>
                 <Icon name="account-balance-wallet" size={16} color="#28a745" />
@@ -95,8 +98,8 @@ const UserList = ({
                 {userLoans.map((loan) => (
                   <View key={loan._id} style={styles.loanRow}>
                     <Text style={styles.loanText}>
-                      ₹{loan.principalAmount} | {loan.status} | Installments:{" "}
-                      {loan.paidInstallments}/{loan.totalInstallments}
+                      ₹{loan.principalAmount || 0} | {loan.status || "N/A"} | Installments:{" "}
+                      {loan.paidInstallments || 0}/{loan.totalInstallments || 0}
                     </Text>
                   </View>
                 ))}
@@ -133,7 +136,7 @@ const UserList = ({
   return (
     <View style={styles.container}>
       <FlatList
-        data={users}
+        data={users || []}
         keyExtractor={(item) => item._id?.toString() || item.id?.toString() || Math.random().toString()}
         renderItem={renderUserItem}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

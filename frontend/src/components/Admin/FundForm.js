@@ -15,8 +15,8 @@ const FundForm = ({
   visible,
   onClose,
   users = [],
-  formData,
-  setFormData,
+  formData = {},           // ✅ Default empty object
+  setFormData = () => {},  // ✅ Default noop function
   onSave,
   isEditing,
   onDelete,
@@ -24,7 +24,6 @@ const FundForm = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Ensure formData stays synced when opening the modal
   useEffect(() => {
     if (!visible) setIsSaving(false);
   }, [visible]);
@@ -47,8 +46,8 @@ const FundForm = ({
     setIsSaving(true);
 
     try {
-      const updatedFund = await onSave(formData); // <-- save & get updated fund from backend
-      setFormData(updatedFund);                   // <-- keep formData synced
+      const updatedFund = await onSave(formData);
+      setFormData(updatedFund);
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to save fund.");
@@ -75,11 +74,14 @@ const FundForm = ({
             {users.map(user => (
               <TouchableOpacity
                 key={user._id || user.id}
-                style={[styles.pickerOption, formData.participantId === (user._id || user.id) && styles.pickerSelected]}
+                style={[
+                  styles.pickerOption,
+                  formData?.participantId === (user._id || user.id) && styles.pickerSelected
+                ]}
                 onPress={() => setFormData({ ...formData, participantId: user._id || user.id })}
               >
-                <Text style={formData.participantId === (user._id || user.id) ? styles.pickerTextSelected : styles.pickerText}>
-                  {user.name}
+                <Text style={formData?.participantId === (user._id || user.id) ? styles.pickerTextSelected : styles.pickerText}>
+                  {user.name || "Unknown"}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -91,17 +93,17 @@ const FundForm = ({
             keyboardType="numeric"
             placeholder="Enter amount"
             placeholderTextColor="#888"
-            value={formData.amount?.toString() || ''}
+            value={formData?.amount?.toString() || ''}
             onChangeText={text => setFormData({ ...formData, amount: parseFloat(text) || 0 })}
           />
 
           <Text style={styles.label}>Due Date:</Text>
           <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-            <Text>{formData.dueDate || 'Select date'}</Text>
+            <Text>{formData?.dueDate || 'Select date'}</Text>
           </TouchableOpacity>
           {showDatePicker && (
             <DateTimePicker
-              value={formData.dueDate ? new Date(formData.dueDate) : new Date()}
+              value={formData?.dueDate ? new Date(formData.dueDate) : new Date()}
               mode="date"
               display="default"
               onChange={(event, date) => {
@@ -114,17 +116,22 @@ const FundForm = ({
           <Text style={styles.label}>Status:</Text>
           <View style={styles.radioGroup}>
             <TouchableOpacity
-              style={[styles.radioButton, formData.status === 'pending' && styles.radioSelected, formData.status === 'paid' && styles.disabledRadio]}
-              onPress={() => formData.status !== 'paid' && setFormData({ ...formData, status: 'pending' })}
-              disabled={formData.status === 'paid'} // Prevent changing back to pending
+              style={[
+                styles.radioButton,
+                formData?.status === 'pending' && styles.radioSelected,
+                formData?.status === 'paid' && styles.disabledRadio
+              ]}
+              onPress={() => formData?.status !== 'paid' && setFormData({ ...formData, status: 'pending' })}
+              disabled={formData?.status === 'paid'}
             >
-              <Text style={formData.status === 'pending' ? styles.radioTextSelected : styles.radioText}>Pending</Text>
+              <Text style={formData?.status === 'pending' ? styles.radioTextSelected : styles.radioText}>Pending</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={[styles.radioButton, formData.status === 'paid' && styles.radioSelected]}
+              style={[styles.radioButton, formData?.status === 'paid' && styles.radioSelected]}
               onPress={() => setFormData({ ...formData, status: 'paid' })}
             >
-              <Text style={formData.status === 'paid' ? styles.radioTextSelected : styles.radioText}>Paid</Text>
+              <Text style={formData?.status === 'paid' ? styles.radioTextSelected : styles.radioText}>Paid</Text>
             </TouchableOpacity>
           </View>
 
