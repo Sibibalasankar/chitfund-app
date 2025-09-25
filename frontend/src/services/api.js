@@ -7,7 +7,7 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth toke
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token'); // ✅ On mobile, replace with SecureStore

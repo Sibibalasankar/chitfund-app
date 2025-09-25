@@ -222,17 +222,29 @@ app.put("/api/users/:id", async (req, res) => {
 
 app.delete("/api/users/:id", async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const userId = req.params.id;
+
+    // 1. Find the user first
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
+    // 2. Delete related Loans & Funds
+    await Loan.deleteMany({ participantId: userId });
+    await Fund.deleteMany({ participantId: userId });
+
+    // 3. Delete user login credentials
     await AuthUser.findOneAndDelete({ phone: user.phone });
 
+    // 4. Delete the User
+    await user.deleteOne();
+
+    // 5. Create a notification
     await Notification.create({
       type: "user_deleted",
-      message: `${user.name} has been removed.`,
+      message: `${user.name} and all related loans/funds have been removed.`,
     });
 
-    res.json({ success: true, message: "User deleted" });
+    res.json({ success: true, message: "User and related loans/funds deleted" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

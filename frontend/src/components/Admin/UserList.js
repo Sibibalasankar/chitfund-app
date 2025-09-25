@@ -1,34 +1,33 @@
-import { 
-  FlatList, 
-  RefreshControl, 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  View 
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const UserList = ({ 
-  users = [], 
-  loans = [], 
+const UserList = ({
+  users = [],
+  loans = [],
   funds = [], // ✅ funds passed here
-  refreshing, 
-  onRefresh, 
-  onEditUser, 
-  onDeleteUser, 
-  onToggleStatus 
+  refreshing,
+  onRefresh,
+  onEditUser,
+  onDeleteUser,
+  onToggleStatus
 }) => {
 
   const renderUserItem = ({ item }) => {
-    // Filter loans for this user
     const userLoans = loans.filter(
-      (loan) => loan.participantId?._id === item._id || loan.participantId === item._id
+      (loan) => loan?.participantId?._id === item._id || loan?.participantId === item._id
     );
 
-    // Filter funds for this user
     const userFunds = funds.filter(
-      (fund) => fund.participantId?._id === item._id || fund.participantId === item._id
+      (fund) => fund?.participantId?._id === item._id || fund?.participantId === item._id
     );
+
 
     // ✅ Combine Loans + Funds for Paid & Pending Calculation
     const totalPaid =
