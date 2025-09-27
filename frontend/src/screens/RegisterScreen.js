@@ -13,6 +13,8 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { useForm } from '../hooks/useForm';
 import {
   getPasswordStrength,
@@ -26,32 +28,34 @@ const RegisterScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register } = useAuth();
+  const { currentLanguage, setLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   const validate = (values) => {
     const errors = {};
 
     if (!values.name) {
-      errors.name = 'Full name is required';
+      errors.name = t('register.validation.nameRequired');
     } else if (!validateName(values.name)) {
-      errors.name = 'Name must be at least 2 characters';
+      errors.name = t('register.validation.invalidName');
     }
 
     if (!values.phone) {
-      errors.phone = 'Mobile number is required';
+      errors.phone = t('register.validation.phoneRequired');
     } else if (!validatePhone(values.phone)) {
-      errors.phone = 'Please enter a valid 10-digit mobile number';
+      errors.phone = t('register.validation.invalidPhone');
     }
 
     if (!values.password) {
-      errors.password = 'Password is required';
+      errors.password = t('register.validation.passwordRequired');
     } else if (!validatePassword(values.password)) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = t('register.validation.invalidPassword');
     }
 
     if (!values.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      errors.confirmPassword = t('register.validation.confirmPasswordRequired');
     } else if (values.password && values.password !== values.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = t('register.validation.passwordsNotMatch');
     }
 
     return errors;
@@ -77,11 +81,11 @@ const RegisterScreen = ({ navigation }) => {
     setIsLoading(true);
     try {
       await register(values);
-      Alert.alert('Success', 'Registration successful. Please login to continue.', [
+      Alert.alert(t('common.success'), t('register.success'), [
         { text: 'OK', onPress: () => navigation.replace('Login') },
       ]);
     } catch (error) {
-      Alert.alert('Registration Failed', error.message);
+      Alert.alert(t('register.errors.registrationFailed'), error.message);
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +106,18 @@ const RegisterScreen = ({ navigation }) => {
     return '#007bff';
   };
 
+  const getPasswordStrengthLabel = () => {
+    const strengthLabels = {
+      0: t('register.passwordStrength.veryWeak'),
+      1: t('register.passwordStrength.weak'),
+      2: t('register.passwordStrength.fair'),
+      3: t('register.passwordStrength.good'),
+      4: t('register.passwordStrength.strong'),
+      5: t('register.passwordStrength.veryStrong')
+    };
+    return strengthLabels[passwordStrength.strength] || '';
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -110,8 +126,8 @@ const RegisterScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* HEADER */}
         <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the Chit Fund community</Text>
+          <Text style={styles.title}>{t('register.title')}</Text>
+          <Text style={styles.subtitle}>{t('register.subtitle')}</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -119,8 +135,8 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, errors.name && touched.name && styles.inputError]}
-              placeholder="Full Name"
-              placeholderTextColor="#888" // 👈 ensures visible placeholder
+              placeholder={t('register.namePlaceholder')}
+              placeholderTextColor="#888"
               value={values.name}
               onChangeText={(value) => handleChange('name', value)}
               onBlur={() => handleBlur('name')}
@@ -135,7 +151,7 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, errors.phone && touched.phone && styles.inputError]}
-              placeholder="Mobile Number (10 digits)"
+              placeholder={t('register.phonePlaceholder')}
               placeholderTextColor="#888"
               value={values.phone}
               onChangeText={formatPhoneInput}
@@ -153,7 +169,7 @@ const RegisterScreen = ({ navigation }) => {
             <View style={styles.passwordWrapper}>
               <TextInput
                 style={[styles.passwordInput]}
-                placeholder="Password"
+                placeholder={t('register.passwordPlaceholder')}
                 placeholderTextColor="#888"
                 value={values.password}
                 onChangeText={(value) => handleChange('password', value)}
@@ -188,7 +204,7 @@ const RegisterScreen = ({ navigation }) => {
                     { color: getPasswordStrengthColor() },
                   ]}
                 >
-                  {passwordStrength.label}
+                  {getPasswordStrengthLabel()}
                 </Text>
               </View>
             )}
@@ -202,7 +218,7 @@ const RegisterScreen = ({ navigation }) => {
             <View style={styles.passwordWrapper}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder="Confirm Password"
+                placeholder={t('register.confirmPasswordPlaceholder')}
                 placeholderTextColor="#888"
                 value={values.confirmPassword}
                 onChangeText={(value) => handleChange('confirmPassword', value)}
@@ -232,43 +248,98 @@ const RegisterScreen = ({ navigation }) => {
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.registerButtonText}>Create Account</Text>
+              <Text style={styles.registerButtonText}>
+                {t('register.registerButton')}
+              </Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.termsContainer}>
             <Text style={styles.termsText}>
-              By creating an account, you agree to our Terms of Service and Privacy Policy
+              {t('register.terms')}
             </Text>
           </View>
         </View>
 
+        {/* Language Switch Button */}
+        <View style={styles.languageContainer}>
+          <TouchableOpacity
+            style={[
+              styles.languageButton,
+              currentLanguage === 'en' && styles.languageButtonActive
+            ]}
+            onPress={() => setLanguage('en')}
+          >
+            <Text style={[
+              styles.languageText,
+              currentLanguage === 'en' && styles.languageTextActive
+            ]}>
+              English
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.languageButton,
+              currentLanguage === 'ta' && styles.languageButtonActive
+            ]}
+            onPress={() => setLanguage('ta')}
+          >
+            <Text style={[
+              styles.languageText,
+              currentLanguage === 'ta' && styles.languageTextActive
+            ]}>
+              தமிழ்
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.loginSection}>
-          <Text style={styles.loginText}>Already have an account?</Text>
+          <Text style={styles.loginText}>{t('register.haveAccount')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.loginLink}>Sign in</Text>
+            <Text style={styles.loginLink}>{t('register.signIn')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  scrollContent: { flexGrow: 1 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f5f5f5' 
+  },
+  scrollContent: { 
+    flexGrow: 1, 
+    paddingBottom: 30 
+  },
+
+  // ================= HEADER =================
   header: {
     backgroundColor: '#28a745',
-    padding: 30,
+    paddingVertical: 60,       // vertical spacing
+    paddingHorizontal: 20,     // horizontal padding
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    alignItems: 'center',
+    alignItems: 'center',      // horizontally center title
+    justifyContent: 'center',
   },
-  title: { fontSize: 32, fontWeight: 'bold', color: 'white', marginBottom: 10 },
-  subtitle: { fontSize: 16, color: 'rgba(255, 255, 255, 0.8)' },
+  title: { 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    color: 'white', 
+    textAlign: 'center', 
+    marginBottom: 8, 
+  },
+  subtitle: { 
+    fontSize: 16, 
+    color: 'rgba(255, 255, 255, 0.85)', 
+    textAlign: 'center', 
+  },
+
+  // ================= FORM =================
   formContainer: {
     padding: 20,
-    marginTop: -20,
+    marginTop: 20,             // space below header
     backgroundColor: 'white',
     borderRadius: 20,
     marginHorizontal: 20,
@@ -287,8 +358,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
-    color: '#000', // 👈 ensures typed text is black
+    color: '#000',
   },
+  inputError: { borderColor: '#dc3545' },
+  errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },
+
+  // ================= PASSWORD =================
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -302,11 +377,9 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000', // 👈 black typed text for password fields
+    color: '#000',
     paddingHorizontal: 10,
   },
-  inputError: { borderColor: '#dc3545' },
-  errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },
   passwordStrengthContainer: { marginTop: 8 },
   passwordStrengthBar: {
     height: 4,
@@ -316,6 +389,8 @@ const styles = StyleSheet.create({
   },
   passwordStrengthFill: { height: '100%', borderRadius: 2 },
   passwordStrengthText: { fontSize: 12, marginTop: 4, fontWeight: '500' },
+
+  // ================= BUTTONS =================
   registerButton: {
     height: 50,
     backgroundColor: '#28a745',
@@ -326,8 +401,11 @@ const styles = StyleSheet.create({
   },
   registerButtonDisabled: { backgroundColor: '#6c757d' },
   registerButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+
   termsContainer: { marginBottom: 10 },
   termsText: { fontSize: 12, color: '#6c757d', textAlign: 'center' },
+
+  // ================= LOGIN LINK =================
   loginSection: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -338,6 +416,27 @@ const styles = StyleSheet.create({
   },
   loginText: { color: '#666', marginRight: 5 },
   loginLink: { color: '#007bff', fontWeight: 'bold' },
+
+  // ================= LANGUAGE SWITCH =================
+  languageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  languageButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginHorizontal: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#007bff',
+    backgroundColor: 'white',
+  },
+  languageButtonActive: { backgroundColor: '#007bff' },
+  languageText: { color: '#007bff', fontSize: 14 },
+  languageTextActive: { color: 'white' },
 });
+
 
 export default RegisterScreen;

@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { DataProvider } from './src/contexts/DataContext';
+import { LanguageProvider } from './src/contexts/LanguageContext';
 import { setNavigator } from './src/services/navigationService';
 
 // Screens
@@ -15,24 +16,17 @@ import ParticipantDashboard from './src/screens/ParticipantDashboard';
 
 const Stack = createStackNavigator();
 
-/* ============================
-   AUTH STACK (Login/Register/Forgot/Reset)
-============================ */
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
-      {/* Forgot password & reset */}
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
     </Stack.Navigator>
   );
 }
 
-/* ============================
-   ADMIN STACK
-============================ */
 function AdminStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -41,9 +35,6 @@ function AdminStack() {
   );
 }
 
-/* ============================
-   PARTICIPANT STACK
-============================ */
 function ParticipantStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -52,9 +43,6 @@ function ParticipantStack() {
   );
 }
 
-/* ============================
-   APP NAVIGATOR
-============================ */
 function AppNavigator() {
   const { user } = useAuth();
   const navigationRef = useRef();
@@ -78,15 +66,14 @@ function AppNavigator() {
   );
 }
 
-/* ============================
-   ROOT APP
-============================ */
 export default function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <AppNavigator />
-      </DataProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <DataProvider>
+          <AppNavigator />
+        </DataProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

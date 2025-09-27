@@ -5,6 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useTranslation } from "../hooks/useTranslation";
 import { validateName, validatePhone } from "../utils/validation";
 
 import FundForm from "../components/Admin/FundForm";
@@ -42,6 +44,9 @@ const AdminDashboard = ({ navigation }) => {
     deleteLoan,
   } = useData();
 
+  const { currentLanguage, setLanguage } = useLanguage();
+  const { t } = useTranslation();
+
   const [fundModalVisible, setFundModalVisible] = useState(false);
   const [fundFormData, setFundFormData] = useState({
     participantId: "",
@@ -50,8 +55,6 @@ const AdminDashboard = ({ navigation }) => {
     status: "pending",
   });
   const [editingFund, setEditingFund] = useState(null);
-
-
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -65,8 +68,18 @@ const AdminDashboard = ({ navigation }) => {
     status: "active",
   });
 
-  const [userSearch, setUserSearch] = useState(""); // ✅ Search state
-
+  const [userSearch, setUserSearch] = useState("");
+  const [loanModalVisible, setLoanModalVisible] = useState(false);
+  const [loanFormData, setLoanFormData] = useState({
+    participantId: "",
+    principalAmount: 0,
+    interestRate: 0,
+    totalInstallments: 1,
+    paidInstallments: 0,
+    startDate: "",
+    status: "pending"
+  });
+  const [editingLoan, setEditingLoan] = useState(null);
 
   // --- User Handlers ---
   const handleAddUser = () => {
@@ -88,42 +101,46 @@ const AdminDashboard = ({ navigation }) => {
 
   const handleSaveUser = async () => {
     if (!formData.name || !formData.phone)
-      return Alert.alert("Error", "Please fill all fields");
+      return Alert.alert(t('admin.alerts.error'), t('admin.validation.fillAllFields'));
     if (!validateName(formData.name))
-      return Alert.alert("Error", "Name must be at least 2 characters");
+      return Alert.alert(t('admin.alerts.error'), t('admin.validation.validName'));
     if (!validatePhone(formData.phone))
-      return Alert.alert("Error", "Enter valid 10-digit phone");
+      return Alert.alert(t('admin.alerts.error'), t('admin.validation.validPhone'));
 
     try {
       if (editingUser) {
         await updateUser(editingUser._id, formData);
-        Alert.alert("Success", "User updated successfully");
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('updated', 'User'));
       } else {
         await addUser(formData);
-        Alert.alert("Success", "User added successfully");
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'User'));
       }
       setModalVisible(false);
     } catch (err) {
-      Alert.alert("Error", err.message || "Failed to save user");
+      Alert.alert(t('admin.alerts.error'), err.message || "Failed to save user");
     }
   };
 
   const handleDeleteUser = (userId, userName) => {
-    Alert.alert("Delete User", `Are you sure you want to delete ${userName}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteUser(userId);
-            Alert.alert("Deleted", `${userName} has been removed`);
-          } catch (err) {
-            Alert.alert("Error", err.message || "Failed to delete user");
-          }
+    Alert.alert(
+      t('admin.buttons.delete') + " " + t('admin.tabs.users').slice(0, -1),
+      `${t('admin.alerts.confirmDelete')} ${userName}?`,
+      [
+        { text: t('admin.buttons.cancel'), style: "cancel" },
+        {
+          text: t('admin.buttons.delete'),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteUser(userId);
+              Alert.alert(t('admin.alerts.deleted'), `${userName} ${t('admin.alerts.deleted')}`);
+            } catch (err) {
+              Alert.alert(t('admin.alerts.error'), err.message || "Failed to delete user");
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const toggleUserStatus = async (user) => {
@@ -132,7 +149,7 @@ const AdminDashboard = ({ navigation }) => {
         status: user.status === "active" ? "inactive" : "active",
       });
     } catch (err) {
-      Alert.alert("Error", err.message || "Failed to update status");
+      Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
     }
   };
 
@@ -161,74 +178,42 @@ const AdminDashboard = ({ navigation }) => {
 
   const handleSaveFund = async () => {
     if (!fundFormData.participantId || fundFormData.amount <= 0 || !fundFormData.dueDate) {
-      return Alert.alert("Error", "Please fill all fields");
+      return Alert.alert(t('admin.alerts.error'), t('admin.validation.fillAllFields'));
     }
     try {
       if (editingFund) {
         await updateFund(editingFund._id, fundFormData);
-        Alert.alert("Success", "Fund updated successfully");
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('updated', 'Fund'));
       } else {
         await addFund(fundFormData);
-        Alert.alert("Success", "Fund added successfully");
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'Fund'));
       }
       setFundModalVisible(false);
     } catch (err) {
-      Alert.alert("Error", err.message || "Failed to save fund");
+      Alert.alert(t('admin.alerts.error'), err.message || "Failed to save fund");
     }
   };
 
   const handleDeleteFund = (fundId, participantName) => {
     Alert.alert(
-      "Delete Fund",
-      `Are you sure you want to delete ${participantName}'s fund?`,
+      t('admin.buttons.delete') + " Fund",
+      `${t('admin.alerts.confirmDelete')} ${participantName}'s fund?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t('admin.buttons.cancel'), style: "cancel" },
         {
-          text: "Delete",
+          text: t('admin.buttons.delete'),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteFund(fundId);
-              Alert.alert("Deleted", `Fund for ${participantName} has been removed`);
+              Alert.alert(t('admin.alerts.deleted'), `Fund for ${participantName} ${t('admin.alerts.deleted')}`);
             } catch (err) {
-              Alert.alert("Error", err.message || "Failed to delete fund");
+              Alert.alert(t('admin.alerts.error'), err.message || "Failed to delete fund");
             }
           },
         },
       ]
     );
-  };
-
-  // --- Logout ---
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Logout", style: "destructive", onPress: () => logout() },
-    ]);
-  };
-  const [loanModalVisible, setLoanModalVisible] = useState(false);
-  const [loanFormData, setLoanFormData] = useState({
-    participantId: "",
-    principalAmount: 0,
-    interestRate: 0,
-    totalInstallments: 1,
-    paidInstallments: 0,
-    startDate: "",
-    status: "pending"
-  });
-  const [editingLoan, setEditingLoan] = useState(null);
-
-  // --- Refresh ---
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([fetchUsers(), fetchFunds(), fetchLoans(), fetchNotifications()]);
-    } catch (error) {
-      console.log("Refresh Error:", error);
-      Alert.alert("Error", "Failed to refresh data");
-    } finally {
-      setRefreshing(false);
-    }
   };
 
   // --- Loan Handlers ---
@@ -263,42 +248,63 @@ const AdminDashboard = ({ navigation }) => {
 
   const handleSaveLoan = async (loanData) => {
     if (!loanData.participantId || loanData.principalAmount <= 0 || loanData.interestRate <= 0) {
-      return Alert.alert("Error", "Please fill all required fields");
+      return Alert.alert(t('admin.alerts.error'), t('admin.validation.fillAllFields'));
     }
     try {
       if (editingLoan) {
         await updateLoan(editingLoan._id, loanData);
-        Alert.alert("Success", "Loan updated successfully");
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('updated', 'Loan'));
       } else {
         await addLoan(loanData);
-        Alert.alert("Success", "Loan added successfully");
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'Loan'));
       }
       setLoanModalVisible(false);
     } catch (err) {
-      Alert.alert("Error", err.message || "Failed to save loan");
+      Alert.alert(t('admin.alerts.error'), err.message || "Failed to save loan");
     }
   };
 
   const handleDeleteLoan = (loanId, participantName) => {
     Alert.alert(
-      "Delete Loan",
-      `Are you sure you want to delete ${participantName}'s loan?`,
+      t('admin.buttons.delete') + " Loan",
+      `${t('admin.alerts.confirmDelete')} ${participantName}'s loan?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t('admin.buttons.cancel'), style: "cancel" },
         {
-          text: "Delete",
+          text: t('admin.buttons.delete'),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteLoan(loanId);
-              Alert.alert("Deleted", `Loan for ${participantName} has been removed`);
+              Alert.alert(t('admin.alerts.deleted'), `Loan for ${participantName} ${t('admin.alerts.deleted')}`);
             } catch (err) {
-              Alert.alert("Error", err.message || "Failed to delete loan");
+              Alert.alert(t('admin.alerts.error'), err.message || "Failed to delete loan");
             }
           },
         },
       ]
     );
+  };
+
+  // --- Logout ---
+  const handleLogout = () => {
+    Alert.alert(t('admin.logout'), t('admin.logoutConfirm'), [
+      { text: t('admin.buttons.cancel'), style: "cancel" },
+      { text: t('admin.logout'), style: "destructive", onPress: () => logout() },
+    ]);
+  };
+
+  // --- Refresh ---
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchUsers(), fetchFunds(), fetchLoans(), fetchNotifications()]);
+    } catch (error) {
+      console.log("Refresh Error:", error);
+      Alert.alert(t('admin.alerts.error'), "Failed to refresh data");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // --- Filtered Users ---
@@ -330,7 +336,7 @@ const AdminDashboard = ({ navigation }) => {
           <View style={styles.tabContent}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search by name, phone, or role"
+              placeholder={t('admin.search.users')}
               value={userSearch}
               onChangeText={setUserSearch}
             />
@@ -347,7 +353,7 @@ const AdminDashboard = ({ navigation }) => {
                 style={styles.gradientInner}
               >
                 <Icon name="person-add" size={20} color="#fff" />
-                <Text style={styles.gradientButtonText}>Add User</Text>
+                <Text style={styles.gradientButtonText}>{t('admin.buttons.addUser')}</Text>
               </LinearGradient>
             </TouchableOpacity>
 
@@ -379,7 +385,7 @@ const AdminDashboard = ({ navigation }) => {
                 style={styles.gradientInner}
               >
                 <Icon name="add-circle" size={20} color="#fff" />
-                <Text style={styles.gradientButtonText}>Add Fund</Text>
+                <Text style={styles.gradientButtonText}>{t('admin.buttons.addFund')}</Text>
               </LinearGradient>
             </TouchableOpacity>
 
@@ -390,9 +396,9 @@ const AdminDashboard = ({ navigation }) => {
               onUpdateStatus={async (id, status, participantName) => {
                 try {
                   await updateFundStatus(id, status);
-                  Alert.alert("Success", `${participantName}'s fund marked as ${status}`);
+                  Alert.alert(t('admin.alerts.success'), `${participantName}'s fund marked as ${status}`);
                 } catch (err) {
-                  Alert.alert("Error", err.message || "Failed to update fund");
+                  Alert.alert(t('admin.alerts.error'), err.message || "Failed to update fund");
                 }
               }}
               onEditFund={handleEditFund}
@@ -406,26 +412,25 @@ const AdminDashboard = ({ navigation }) => {
             <TouchableOpacity style={styles.gradientButton} onPress={handleAddLoan} activeOpacity={0.8}>
               <LinearGradient colors={["#17a2b8", "#6fc2d0"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.gradientInner}>
                 <Icon name="add-circle" size={20} color="#fff" />
-                <Text style={styles.gradientButtonText}>Add Loan</Text>
+                <Text style={styles.gradientButtonText}>{t('admin.buttons.addLoan')}</Text>
               </LinearGradient>
             </TouchableOpacity>
 
             <LoanList
               loans={loans || []}
               fetchLoans={fetchLoans}
-              updateLoan={updateLoan} // ✅ Add this line
+              updateLoan={updateLoan}
               onEditLoan={handleEditLoan}
               onDeleteLoan={handleDeleteLoan}
               onUpdateStatus={async (id, status, participantName) => {
                 try {
                   await updateLoanStatus(id, status);
-                  Alert.alert("Success", `${participantName}'s loan marked as ${status}`);
+                  Alert.alert(t('admin.alerts.success'), `${participantName}'s loan marked as ${status}`);
                 } catch (err) {
-                  Alert.alert("Error", err.message || "Failed to update loan");
+                  Alert.alert(t('admin.alerts.error'), err.message || "Failed to update loan");
                 }
               }}
             />
-
           </View>
         );
 
@@ -455,15 +460,43 @@ const AdminDashboard = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={["#4e54c8", "#8f94fb"]} style={styles.header}>
-        <Text style={styles.title}>Admin Dashboard</Text>
-        <TouchableOpacity onPress={handleLogout}>
-          <Icon name="logout" size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flex: 1 }}>
+          {/* Language Toggle */}
+          <TouchableOpacity
+            style={styles.languageToggle}
+            onPress={() => {
+              const newLang = currentLanguage === "en" ? "ta" : "en";
+              setLanguage(newLang); // From useLanguage context
+            }}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={["#667eea", "#764ba2"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.languageInner}
+            >
+              <Text style={styles.languageText}>{currentLanguage === "en" ? "TA" : "EN"}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Title */}
+          <Text style={styles.title}>{t("admin.dashboardTitle")}</Text>
+
+          {/* Logout */}
+          <TouchableOpacity onPress={handleLogout}>
+            <Icon name="logout" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <View style={styles.content}>{getActiveTabContent()}</View>
 
-      <AdminTabs activeTab={activeTab} setActiveTab={setActiveTab} notifications={notifications} />
+      <AdminTabs
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        notifications={notifications}
+      />
 
       <UserForm
         visible={modalVisible}
@@ -477,7 +510,7 @@ const AdminDashboard = ({ navigation }) => {
       <LoanForm
         visible={loanModalVisible}
         onClose={() => setLoanModalVisible(false)}
-        users={users} // ✅ Make sure you're passing the users array
+        users={users}
         formData={loanFormData}
         setFormData={setLoanFormData}
         onSave={handleSaveLoan}
@@ -530,6 +563,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: "#fff",
   },
+  languageToggle: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginRight: 10,
+  },
+  languageInner: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  languageText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+
 });
 
 export default AdminDashboard;

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons'; // 👈 vector icons
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,27 +13,31 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { useForm } from '../hooks/useForm';
 import { validatePassword, validatePhone } from '../utils/validation';
 
 const LoginScreen = ({ navigation }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // 👈 toggle state
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
+  const { currentLanguage, setLanguage, isLanguageReady } = useLanguage();
+  const { t } = useTranslation();
 
   const validate = (values) => {
     const errors = {};
 
     if (!values.phone) {
-      errors.phone = 'Mobile number is required';
+      errors.phone = t('login.validation.mobileRequired');
     } else if (!validatePhone(values.phone)) {
-      errors.phone = 'Please enter a valid 10-digit mobile number';
+      errors.phone = t('login.validation.invalidMobile');
     }
 
     if (!values.password) {
-      errors.password = 'Password is required';
+      errors.password = t('login.validation.passwordRequired');
     } else if (!validatePassword(values.password)) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = t('login.validation.invalidPassword');
     }
 
     return errors;
@@ -48,21 +52,23 @@ const LoginScreen = ({ navigation }) => {
     setIsLoggingIn(true);
     try {
       await login(values.phone, values.password);
-      // AuthContext updates user, AppNavigator switches stack
     } catch (error) {
-      Alert.alert('Login Failed', error.message);
+      Alert.alert(
+        t('login.errors.loginFailed'),
+        error.message
+      );
     } finally {
       setIsLoggingIn(false);
     }
   };
 
   const formatPhoneInput = (text) => {
-    const cleaned = text.replace(/\D/g, ''); // only numbers
-    const limited = cleaned.slice(0, 10); // max 10 digits
+    const cleaned = text.replace(/\D/g, '');
+    const limited = cleaned.slice(0, 10);
     handleChange('phone', limited);
   };
 
-  if (isLoading) {
+  if (!isLanguageReady || isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007bff" />
@@ -78,22 +84,21 @@ const LoginScreen = ({ navigation }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Chit Fund App</Text>
-          <Text style={styles.subtitle}>Manage your funds efficiently</Text>
+          <Text style={styles.title}>{t('login.title')}</Text>
+          <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Login with Mobile Number</Text>
+          <Text style={styles.formTitle}>{t('login.formTitle')}</Text>
 
-          {/* Phone input */}
           <View style={styles.inputContainer}>
             <TextInput
               style={[
                 styles.input,
                 errors.phone && touched.phone && styles.inputError,
               ]}
-              placeholder="Mobile Number (10 digits)"
-              placeholderTextColor="#888"  // 👈 visible placeholder
+              placeholder={t('login.mobileNumber')}
+              placeholderTextColor="#888"
               value={values.phone}
               onChangeText={formatPhoneInput}
               onBlur={() => handleBlur('phone')}
@@ -105,13 +110,12 @@ const LoginScreen = ({ navigation }) => {
             )}
           </View>
 
-          {/* Password input */}
           <View style={styles.inputContainer}>
             <View style={styles.passwordWrapper}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder="Password"
-                placeholderTextColor="#888"  // 👈 visible placeholder
+                placeholder={t('login.password')}
+                placeholderTextColor="#888"
                 value={values.password}
                 onChangeText={(value) => handleChange('password', value)}
                 onBlur={() => handleBlur('password')}
@@ -132,7 +136,6 @@ const LoginScreen = ({ navigation }) => {
             )}
           </View>
 
-          {/* Login button */}
           <TouchableOpacity
             style={[
               styles.loginButton,
@@ -144,39 +147,61 @@ const LoginScreen = ({ navigation }) => {
             {isLoggingIn ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.loginButtonText}>Login</Text>
+              <Text style={styles.loginButtonText}>
+                {t('login.loginButton')}
+              </Text>
             )}
           </TouchableOpacity>
 
-          {/* Forgot password */}
           <TouchableOpacity
             style={styles.forgotPassword}
             onPress={() => navigation.navigate('ForgotPassword')}
           >
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            <Text style={styles.forgotPasswordText}>
+              {t('login.forgotPassword')}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Demo accounts */}
-        {/* <View style={styles.demoSection}>
-          <Text style={styles.demoTitle}>Demo Accounts</Text>
-          <View style={styles.demoAccount}>
-            <Text style={styles.demoAccountText}>
-              Admin: 9876543210 / admin123
+        <View style={styles.languageContainer}>
+          <TouchableOpacity
+            style={[
+              styles.languageButton,
+              currentLanguage === 'en' && styles.languageButtonActive
+            ]}
+            onPress={() => setLanguage('en')}
+          >
+            <Text style={[
+              styles.languageText,
+              currentLanguage === 'en' && styles.languageTextActive
+            ]}>
+              English
             </Text>
-          </View>
-          <View style={styles.demoAccount}>
-            <Text style={styles.demoAccountText}>
-              User: 9876543211 / user123
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.languageButton,
+              currentLanguage === 'ta' && styles.languageButtonActive
+            ]}
+            onPress={() => setLanguage('ta')}
+          >
+            <Text style={[
+              styles.languageText,
+              currentLanguage === 'ta' && styles.languageTextActive
+            ]}>
+              தமிழ்
             </Text>
-          </View>
-        </View> */}
+          </TouchableOpacity>
+        </View>
 
-        {/* Register link */}
         <View style={styles.registerSection}>
-          <Text style={styles.registerText}>Don't have an account?</Text>
+          <Text style={styles.registerText}>
+            {t('login.noAccount')}
+          </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.registerLink}>Sign up now</Text>
+            <Text style={styles.registerLink}>
+              {t('login.signUp')}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -232,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
     fontSize: 16,
-    color: '#000',  // 👈 black text for input
+    color: '#000',
   },
   inputError: { borderColor: '#dc3545' },
   errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },
@@ -248,21 +273,6 @@ const styles = StyleSheet.create({
   loginButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
   forgotPassword: { alignItems: 'center' },
   forgotPasswordText: { color: '#007bff', fontSize: 14 },
-  demoSection: { padding: 20, marginTop: 20 },
-  demoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
-  },
-  demoAccount: {
-    backgroundColor: '#e9ecef',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  demoAccountText: { textAlign: 'center', color: '#666' },
   registerSection: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -273,8 +283,6 @@ const styles = StyleSheet.create({
   },
   registerText: { color: '#666', marginRight: 5 },
   registerLink: { color: '#007bff', fontWeight: 'bold' },
-
-  // 👇 Password input wrapper
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -288,7 +296,32 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000',  // 👈 black text for password
+    color: '#000',
+  },
+  languageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  languageButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginHorizontal: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#007bff',
+    backgroundColor: 'white',
+  },
+  languageButtonActive: {
+    backgroundColor: '#007bff',
+  },
+  languageText: {
+    color: '#007bff',
+    fontSize: 14,
+  },
+  languageTextActive: {
+    color: 'white',
   },
 });
 

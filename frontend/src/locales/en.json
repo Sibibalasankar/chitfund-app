@@ -1,0 +1,121 @@
+{
+  "login": {
+    "title": "Chit Fund App",
+    "subtitle": "Manage your funds efficiently",
+    "formTitle": "Login with Mobile Number",
+    "mobileNumber": "Mobile Number",
+    "password": "Password",
+    "loginButton": "Login",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up now",
+    "loading": "Loading...",
+    "validation": {
+      "mobileRequired": "Mobile number is required",
+      "invalidMobile": "Please enter a valid 10-digit mobile number",
+      "passwordRequired": "Password is required",
+      "invalidPassword": "Password must be at least 6 characters"
+    },
+    "errors": {
+      "loginFailed": "Login Failed"
+    }
+  },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "phonePlaceholder": "Phone number",
+    "newPasswordPlaceholder": "New Password",
+    "resetButton": "Reset Password",
+    "success": "Password reset successful",
+    "errors": {
+      "emptyFields": "Enter phone number and new password",
+      "somethingWrong": "Something went wrong"
+    }
+  }, "register": {
+    "title": "Create Account",
+    "subtitle": "Join the Chit Fund community",
+    "namePlaceholder": "Full Name",
+    "phonePlaceholder": "Mobile Number",
+    "passwordPlaceholder": "Password",
+    "confirmPasswordPlaceholder": "Confirm Password",
+    "registerButton": "Create Account",
+    "terms": "By creating an account, you agree to our Terms of Service and Privacy Policy",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "success": "Registration successful. Please login to continue.",
+    "validation": {
+      "nameRequired": "Full name is required",
+      "invalidName": "Name must be at least 2 characters",
+      "phoneRequired": "Mobile number is required",
+      "invalidPhone": "Please enter a valid 10-digit mobile number",
+      "passwordRequired": "Password is required",
+      "invalidPassword": "Password must be at least 6 characters",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsNotMatch": "Passwords do not match"
+    },
+    "errors": {
+      "registrationFailed": "Registration Failed"
+    },
+    "passwordStrength": {
+      "veryWeak": "Very Weak",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong",
+      "veryStrong": "Very Strong"
+    }
+  },
+  "admin": {
+    "dashboardTitle": "Admin Dashboard",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "tabs": {
+      "overview": "Overview",
+      "users": "Users",
+      "funds": "Funds",
+      "loans": "Loans",
+      "notifications": "Notifications"
+    },
+    "buttons": {
+      "addUser": "Add User",
+      "addFund": "Add Fund",
+      "addLoan": "Add Loan",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "refresh": "Refresh"
+    },
+    "search": {
+      "users": "Search by name, phone, or role"
+    },
+    "alerts": {
+      "success": "Success",
+      "error": "Error",
+      "confirmDelete": "Are you sure you want to delete",
+      "deleted": "has been removed",
+      "updated": "updated successfully",
+      "added": "added successfully"
+    },
+    "validation": {
+      "fillAllFields": "Please fill all fields",
+      "validName": "Name must be at least 2 characters",
+      "validPhone": "Enter valid 10-digit phone",
+      "validAmount": "Amount must be greater than 0",
+      "validInterest": "Interest rate must be greater than 0"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "completed": "Completed"
+    }
+  },
+  
+  "common": {
+    "success": "Success",
+    "error": "Error",
+    "back": "Back to Login"
+  }
+}
