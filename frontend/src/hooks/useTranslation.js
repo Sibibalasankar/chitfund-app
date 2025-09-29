@@ -99,7 +99,9 @@ export const useTranslation = () => {
         'admin.status.active': 'Active',
         'admin.status.inactive': 'Inactive',
         'admin.status.pending': 'Pending',
+        'admin.status.paid': 'Paid',
         'admin.status.approved': 'Approved',
+        'admin.status.updatedTo': 'updated to',
         'admin.status.rejected': 'Rejected',
         'admin.status.completed': 'Completed',
 
@@ -137,16 +139,31 @@ export const useTranslation = () => {
         'stats.noActivities': 'No Recent Activities',
         'stats.activitiesWillAppear': 'Your recent fund activities will appear here',
 
-        // Fund translations (add these for completeness)
-        'fundForm.title': 'Fund Details',
+        // Fund translations
+        'fundForm.editTitle': 'Edit Fund / Transaction',
+        'fundForm.addTitle': 'Add Fund / Transaction',
         'fundForm.participantLabel': 'Participant',
         'fundForm.amountLabel': 'Amount',
+        'fundForm.amountPlaceholder': 'Enter amount',
         'fundForm.dueDateLabel': 'Due Date',
+        'fundForm.selectDate': 'Select date',
         'fundForm.statusLabel': 'Status',
-        'fundForm.saveButton': 'Save Fund',
-        'fundForm.updateButton': 'Update Fund',
+        'fundForm.deleteConfirmation': 'Are you sure you want to delete this fund?',
+        'fundForm.saveError': 'Failed to save fund.',
+        'fundForm.saving': 'Saving...',
+        'fundForm.updateButton': 'Update',
+        'fundForm.saveButton': 'Save',
+        'fundList.due': 'Due',
+        'fundList.paid': 'Paid',
+        'fundList.markPaid': 'Mark Paid',
+        'fundList.filter': 'Filter',
+        'fundList.sort': 'Sort',
+        'fundList.all': 'All',
+        'fundList.recent': 'Recent',
+        'fundList.dueDate': 'Due Date',
+        'fundList.amount': 'Amount',
 
-        // Loan translations (add these for completeness)
+        // Loan translations
         'loanForm.title': 'Loan Details',
         'loanForm.participantLabel': 'Participant',
         'loanForm.principalAmountLabel': 'Principal Amount',
@@ -179,6 +196,7 @@ export const useTranslation = () => {
           'admin.status.active': 'Active',
           'admin.status.inactive': 'Inactive',
           'admin.status.pending': 'Pending',
+          'admin.status.paid': 'Paid',
           'admin.status.approved': 'Approved',
           'admin.status.rejected': 'Rejected',
           'admin.status.completed': 'Completed'
@@ -192,9 +210,9 @@ export const useTranslation = () => {
     }
   };
 
-  return { 
-    t, 
+  return {
+    t,
     currentLanguage,
-    isLanguageReady 
+    isLanguageReady
   };
 };

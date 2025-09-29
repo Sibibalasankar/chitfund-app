@@ -12,7 +12,7 @@ export const DataProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loans, setLoans] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // ✅ Use your backend IP
   const API_BASE_URL = "https://chitfund-app-4b4s.onrender.com/api";
 
@@ -21,7 +21,23 @@ export const DataProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/users`);
-      const data = await res.json();
+
+      // Get raw response first
+      const text = await res.text();
+
+      // Debug: log what you actually got
+      console.log("Fetch Users Raw Response:", res.status, text);
+
+      // If server didn’t return JSON, throw an error
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Expected JSON, got: ${text.slice(0, 100)}`);
+      }
+
+      if (!res.ok) throw new Error(data.error || "Failed to fetch users");
+
       setUsers(data);
       return data;
     } catch (err) {
@@ -44,7 +60,7 @@ export const DataProvider = ({ children }) => {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed to add user");
 
-      setUsers((prev) => [...prev, data.user]);
+      await fetchUsers(); // refresh from backend
       return data.user;
     } catch (err) {
       console.error("Add User Error:", err);
@@ -53,32 +69,23 @@ export const DataProvider = ({ children }) => {
   };
 
   // ---- Update User ----
- // In your DataContext - updateUser function
-const updateUser = async (id, userData) => {
-  try {
-    console.log('📤 Sending update request for user:', id, 'Data:', userData);
-    
-    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-    
-    const data = await res.json();
-    console.log('📥 Server response:', data);
-    
-    if (!res.ok) throw new Error(data.error || "Failed to update user");
+  const updateUser = async (id, userData) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update user");
 
-    // Update local state
-    setUsers((prev) => prev.map((u) => (u._id === id ? data.user : u)));
-    
-    console.log('✅ Local state updated');
-    return data.user;
-  } catch (err) {
-    console.error("Update User Error:", err);
-    throw err;
-  }
-};
+      await fetchUsers(); // refresh
+      return data.user;
+    } catch (err) {
+      console.error("Update User Error:", err);
+      throw err;
+    }
+  };
 
   // ---- Delete User ----
   const deleteUser = async (id) => {
@@ -87,7 +94,7 @@ const updateUser = async (id, userData) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to delete user");
 
-      setUsers((prev) => prev.filter((u) => u._id !== id));
+      await fetchUsers(); // refresh
       return data;
     } catch (err) {
       console.error("Delete User Error:", err);
@@ -215,12 +222,12 @@ const updateUser = async (id, userData) => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
       });
-      
+
       if (res.ok) {
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
         return;
       }
-      
+
       // Fallback: mark individually
       await Promise.all(
         notifications
@@ -253,20 +260,20 @@ const updateUser = async (id, userData) => {
   const addLoan = async (loanData) => {
     try {
       console.log("Sending loan data:", loanData);
-      
+
       const res = await fetch(`${API_BASE_URL}/loans`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(loanData),
       });
-      
+
       const data = await res.json();
       console.log("Server response:", res.status, data);
-      
+
       if (!res.ok) {
         throw new Error(data.error || data.message || "Failed to add loan");
       }
-      
+
       setLoans((prev) => [...prev, data.loan]);
       return data.loan;
     } catch (err) {
@@ -285,11 +292,11 @@ const updateUser = async (id, userData) => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update loan");
-      
-      setLoans(prev => prev.map(loan => 
+
+      setLoans(prev => prev.map(loan =>
         loan._id === id ? { ...loan, ...data.loan } : loan
       ));
-      
+
       return data.loan;
     } catch (err) {
       console.error("Update Loan Error:", err);
@@ -344,29 +351,29 @@ const updateUser = async (id, userData) => {
     loans,
     notifications,
     isLoading,
-    
+
     // Functions
     fetchUsers,
     addUser,
     updateUser,
     deleteUser,
-    
+
     fetchFunds,
     addFund,
     updateFund,
     updateFundStatus,
     deleteFund,
-    
+
     fetchLoans,
     addLoan,
     updateLoan,
     updateLoanStatus,
     deleteLoan,
-    
+
     fetchNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    
+
     refreshAllData,
   };
 

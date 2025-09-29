@@ -30,7 +30,8 @@
       "emptyFields": "Enter phone number and new password",
       "somethingWrong": "Something went wrong"
     }
-  }, "register": {
+  },
+  "register": {
     "title": "Create Account",
     "subtitle": "Join the Chit Fund community",
     "namePlaceholder": "Full Name",
@@ -108,44 +109,72 @@
       "inactive": "Inactive",
       "pending": "Pending",
       "approved": "Approved",
+      "paid": "Paid",
       "rejected": "Rejected",
-      "completed": "Completed"
+      "completed": "Completed",
+      "updatedTo": "updated to"
     }
   },
   "stats": {
-  "dashboardTitle": "Dashboard Overview",
-  "dashboardSubtitle": "Track your fund management",
-  "totalUsers": "Total Users",
-  "paidFunds": "Paid Funds",
-  "pendingFunds": "Pending Funds",
-  "totalCollected": "Total Collected",
-  "quickActions": "Quick Actions",
-  "recentActivities": "Recent Activities",
-  "viewAll": "View All",
-  "noActivities": "No Recent Activities",
-  "activitiesWillAppear": "Your recent fund activities will appear here"
-},
-"userForm": {
-  "addUser": "Add New User",
-  "editUser": "Edit User",
-  "namePlaceholder": "Full Name",
-  "phonePlaceholder": "Mobile Number (10 digits)",
-  "roleLabel": "Role",
-  "roleParticipant": "Participant",
-  "roleAdmin": "Admin",
-  "statusLabel": "Status",
-  "updateUser": "Update User",
-  "addUserButton": "Add User"
-},
-"userList": {
-  "unknown": "Unknown",
-  "notAvailable": "N/A",
-  "joined": "Joined",
-  "paid": "Paid",
-  "pending": "Pending",
-  "loans": "Loans",
-  "installments": "Installments"
-},
+    "dashboardTitle": "Dashboard Overview",
+    "dashboardSubtitle": "Track your fund management",
+    "totalUsers": "Total Users",
+    "paidFunds": "Paid Funds",
+    "pendingFunds": "Pending Funds",
+    "totalCollected": "Total Collected",
+    "quickActions": "Quick Actions",
+    "recentActivities": "Recent Activities",
+    "viewAll": "View All",
+    "noActivities": "No Recent Activities",
+    "activitiesWillAppear": "Your recent fund activities will appear here"
+  },
+  "userForm": {
+    "addUser": "Add New User",
+    "editUser": "Edit User",
+    "namePlaceholder": "Full Name",
+    "phonePlaceholder": "Mobile Number (10 digits)",
+    "roleLabel": "Role",
+    "roleParticipant": "Participant",
+    "roleAdmin": "Admin",
+    "statusLabel": "Status",
+    "updateUser": "Update User",
+    "addUserButton": "Add User"
+  },
+  "userList": {
+    "unknown": "Unknown",
+    "notAvailable": "N/A",
+    "joined": "Joined",
+    "paid": "Paid",
+    "pending": "Pending",
+    "loans": "Loans",
+    "installments": "Installments"
+  },
+  "fundForm": {
+    "editTitle": "Edit Fund / Transaction",
+    "addTitle": "Add Fund / Transaction",
+    "participantLabel": "Participant",
+    "amountLabel": "Amount",
+    "amountPlaceholder": "Enter amount",
+    "dueDateLabel": "Due Date",
+    "selectDate": "Select date",
+    "statusLabel": "Status",
+    "deleteConfirmation": "Are you sure you want to delete this fund?",
+    "saveError": "Failed to save fund.",
+    "saving": "Saving...",
+    "updateButton": "Update",
+    "saveButton": "Save"
+  },
+  "fundList": {
+    "due": "Due",
+    "paid": "Paid",
+    "markPaid": "Mark Paid",
+    "filter": "Filter",
+    "sort": "Sort",
+    "all": "All",
+    "recent": "Recent",
+    "dueDate": "Due Date",
+    "amount": "Amount"
+  },
   "common": {
     "success": "Success",
     "error": "Error",

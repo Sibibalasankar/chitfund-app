@@ -116,6 +116,10 @@ const AdminDashboard = ({ navigation }) => {
         Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'User'));
       }
       setModalVisible(false);
+
+      // ✅ ADD THIS LINE to refresh users after adding/editing
+      await fetchUsers();
+
     } catch (err) {
       Alert.alert(t('admin.alerts.error'), err.message || "Failed to save user");
     }
@@ -142,20 +146,32 @@ const AdminDashboard = ({ navigation }) => {
       ]
     );
   };
-
 const toggleUserStatus = async (user) => {
+  console.log('🔄 Toggling status for:', user.name, 'Current:', user.status);
+  
   try {
     const newStatus = user.status === "active" ? "inactive" : "active";
+    console.log('📝 New status will be:', newStatus);
+    
+    // Update the user status
     await updateUser(user._id, { status: newStatus });
-    // 🔑 removed fetchUsers()
+    
+    // ✅ CRITICAL: Refresh the users list to get updated data
+    await fetchUsers();
+    console.log('✅ Users list refreshed');
+    
+    // Show success message with translations
     Alert.alert(
       t('admin.alerts.success'),
-      `${user.name} ${t('admin.status.updatedTo')} ${newStatus}`
+      `${user.name} ${t('admin.status.updatedTo')} ${t('admin.status.' + newStatus)}`
     );
+    
   } catch (err) {
+    console.log('❌ Error updating status:', err);
     Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
   }
 };
+
 
 
   // --- Fund Handlers ---
