@@ -1,15 +1,15 @@
-import React from "react";
+import { LinearGradient } from "expo-linear-gradient";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
   Dimensions,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "../../hooks/useTranslation"; // ✅ Add translation hook
 
 const { width } = Dimensions.get("window");
 
@@ -23,6 +23,8 @@ const StatsOverview = ({
   notifications = [],
   setActiveTab,
 }) => {
+  const { t } = useTranslation(); // ✅ Initialize translation hook
+
   const safeUsers = Array.isArray(users) ? users : [];
   const safeFunds = Array.isArray(funds) ? funds : [];
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
@@ -31,21 +33,21 @@ const StatsOverview = ({
     {
       icon: "people",
       number: safeUsers.length,
-      label: "Total Users",
+      label: t('stats.totalUsers'), // ✅ Translated label
       gradient: ["#667eea", "#764ba2"],
       bgColor: "#f8f9ff",
     },
     {
       icon: "check-circle",
       number: safeFunds.filter((f) => f.status === "paid").length,
-      label: "Paid Funds",
+      label: t('stats.paidFunds'), // ✅ Translated label
       gradient: ["#56ab2f", "#a8e6cf"],
       bgColor: "#f8fff8",
     },
     {
       icon: "pending",
       number: safeFunds.filter((f) => f.status === "pending").length,
-      label: "Pending Funds",
+      label: t('stats.pendingFunds'), // ✅ Translated label
       gradient: ["#f093fb", "#f5576c"],
       bgColor: "#fff8f8",
     },
@@ -53,8 +55,8 @@ const StatsOverview = ({
       icon: "account-balance",
       number: safeFunds
         .filter((f) => f.status === "paid")
-        .reduce((sum, fund) => sum + Number(fund.amount || 0), 0), // ✅ safe sum
-      label: "Total Collected",
+        .reduce((sum, fund) => sum + Number(fund.amount || 0), 0),
+      label: t('stats.totalCollected'), // ✅ Translated label
       gradient: ["#4facfe", "#00f2fe"],
       bgColor: "#f0fdff",
       isAmount: true,
@@ -71,7 +73,7 @@ const StatsOverview = ({
 
   const formatDate = (dateStr) => {
     try {
-      return new Date(dateStr).toLocaleString(); // ✅ readable time
+      return new Date(dateStr).toLocaleString();
     } catch {
       return "";
     }
@@ -122,8 +124,8 @@ const StatsOverview = ({
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard Overview</Text>
-        <Text style={styles.headerSubtitle}>Track your fund management</Text>
+        <Text style={styles.headerTitle}>{t('stats.dashboardTitle')}</Text>
+        <Text style={styles.headerSubtitle}>{t('stats.dashboardSubtitle')}</Text>
       </View>
 
       {/* Stats Grid */}
@@ -157,7 +159,7 @@ const StatsOverview = ({
 
       {/* Quick Actions */}
       <View style={styles.quickActionsContainer}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>{t('stats.quickActions')}</Text>
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.quickActionButton}
@@ -165,13 +167,13 @@ const StatsOverview = ({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={["#667eea", "#764ba2"]} // ✅ same as Users tab
+              colors={["#667eea", "#764ba2"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.actionGradient}
             >
               <Icon name="person-add" size={20} color="#fff" />
-              <Text style={styles.quickActionText}>Add User</Text>
+              <Text style={styles.quickActionText}>{t('admin.buttons.addUser')}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -181,13 +183,13 @@ const StatsOverview = ({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={["#28a745", "#81c784"]} // ✅ same as Funds tab
+              colors={["#28a745", "#81c784"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.actionGradient}
             >
               <Icon name="add-circle" size={20} color="#fff" />
-              <Text style={styles.quickActionText}>Add Fund</Text>
+              <Text style={styles.quickActionText}>{t('admin.buttons.addFund')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -197,9 +199,15 @@ const StatsOverview = ({
       {recentActivities.length > 0 && (
         <View style={styles.recentActivityContainer}>
           <View style={styles.activityHeader}>
-            <Text style={styles.sectionTitle}>Recent Activities</Text>
+            <Text style={styles.sectionTitle}>{t('stats.recentActivities')}</Text>
             <TouchableOpacity onPress={() => setActiveTab("notifications")}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text
+                style={styles.viewAllText}
+                numberOfLines={1}      // ✅ prevents overflow
+                ellipsizeMode="tail"   // ✅ trims with …
+              >
+                {t('stats.viewAll')}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -242,13 +250,14 @@ const StatsOverview = ({
         </View>
       )}
 
+
       {/* Empty State */}
       {recentActivities.length === 0 && (
         <View style={styles.emptyState}>
           <Icon name="inbox" size={48} color="#ccc" />
-          <Text style={styles.emptyStateTitle}>No Recent Activities</Text>
+          <Text style={styles.emptyStateTitle}>{t('stats.noActivities')}</Text>
           <Text style={styles.emptyStateText}>
-            Your recent fund activities will appear here
+            {t('stats.activitiesWillAppear')}
           </Text>
         </View>
       )}
@@ -338,17 +347,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    flexWrap: "wrap",   // ✅ allows Tamil text to wrap if needed
+    gap: 6,             // ✅ keeps spacing neat
   },
-  viewAllText: { color: "#667eea", fontSize: 14, fontWeight: "600" },
-  activitiesList: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+  viewAllText: {
+    color: "#667eea",
+    fontSize: 14,
+    fontWeight: "600",
+    paddingHorizontal: 8, // ✅ extra breathing room
+    paddingVertical: 4,
+    maxWidth: 120,        // ✅ prevents it from pushing out of screen
+    textAlign: "right",
   },
+
   activityItem: {
     flexDirection: "row",
     alignItems: "center",

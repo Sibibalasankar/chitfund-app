@@ -1,24 +1,45 @@
-import React, { useState } from "react";
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { useData } from "../../contexts/DataContext"; // ✅ get context
+import { useData } from "../../contexts/DataContext";
+import { useTranslation } from "../../hooks/useTranslation"; // ✅ Add translation hook
 
 const AdminTabs = ({ activeTab, setActiveTab, notifications }) => {
-  const { fetchNotifications } = useData(); // ✅ re-fetch notifications after marking read
+  const { fetchNotifications } = useData();
   const [isFundFormVisible, setFundFormVisible] = useState(false);
+  const { t } = useTranslation(); // ✅ Initialize translation hook
 
-  // ✅ Use same API base URL as DataContext
   const API_BASE_URL = "https://chitfund-app-4b4s.onrender.com/api";
 
   const tabs = [
-    { key: "overview", icon: "dashboard", label: "Overview", iconSize: 24 },
-    { key: "users", icon: "people", label: "Users", iconSize: 24 },
-    { key: "funds", icon: "account-balance", label: "Funds", iconSize: 24 },
-    { key: "loans", icon: "attach-money", label: "Loans", iconSize: 24 }, // <-- Added Loans tab
+    { 
+      key: "overview", 
+      icon: "dashboard", 
+      label: t('admin.tabs.overview'), // ✅ Translated label
+      iconSize: 24 
+    },
+    { 
+      key: "users", 
+      icon: "people", 
+      label: t('admin.tabs.users'), // ✅ Translated label
+      iconSize: 24 
+    },
+    { 
+      key: "funds", 
+      icon: "account-balance", 
+      label: t('admin.tabs.funds'), // ✅ Translated label
+      iconSize: 24 
+    },
+    { 
+      key: "loans", 
+      icon: "attach-money", 
+      label: t('admin.tabs.loans'), // ✅ Translated label
+      iconSize: 24 
+    },
     {
       key: "notifications",
       icon: "notifications",
-      label: "Alerts",
+      label: t('admin.tabs.notifications'), // ✅ Translated label
       iconSize: 24,
       badge: (notifications || []).filter((n) => !n.isRead).length,
     },
@@ -37,13 +58,12 @@ const AdminTabs = ({ activeTab, setActiveTab, notifications }) => {
           onPress={async () => {
             setActiveTab(tab.key);
 
-            // ✅ When opening notifications, mark them as read on backend + refresh state
             if (tab.key === "notifications") {
               try {
                 await fetch(`${API_BASE_URL}/notifications/mark-all-read`, {
                   method: "PUT",
                 });
-                await fetchNotifications(); // ✅ update context state
+                await fetchNotifications();
               } catch (err) {
                 console.error("Failed to mark notifications read:", err);
               }
@@ -67,6 +87,7 @@ const AdminTabs = ({ activeTab, setActiveTab, notifications }) => {
               styles.tabText,
               activeTab === tab.key && styles.activeTabText,
             ]}
+            numberOfLines={1} // ✅ Prevent text overflow
           >
             {tab.label}
           </Text>
@@ -105,6 +126,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     fontWeight: "500",
+    textAlign: "center", // ✅ Center align text
   },
   activeTabText: {
     color: "#007bff",

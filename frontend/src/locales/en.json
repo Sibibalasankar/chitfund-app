@@ -112,7 +112,19 @@
       "completed": "Completed"
     }
   },
-  
+  "stats": {
+  "dashboardTitle": "Dashboard Overview",
+  "dashboardSubtitle": "Track your fund management",
+  "totalUsers": "Total Users",
+  "paidFunds": "Paid Funds",
+  "pendingFunds": "Pending Funds",
+  "totalCollected": "Total Collected",
+  "quickActions": "Quick Actions",
+  "recentActivities": "Recent Activities",
+  "viewAll": "View All",
+  "noActivities": "No Recent Activities",
+  "activitiesWillAppear": "Your recent fund activities will appear here"
+},
   "common": {
     "success": "Success",
     "error": "Error",

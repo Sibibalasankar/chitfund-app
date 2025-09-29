@@ -112,6 +112,19 @@
       "completed": "முடிந்தது"
     }
   },
+  "stats": {
+  "dashboardTitle": "டாஷ்போர்டு கண்ணோட்டம்",
+  "dashboardSubtitle": "உங்கள் நிதி மேலாண்மையை கண்காணிக்கவும்",
+  "totalUsers": "மொத்த பயனர்கள்",
+  "paidFunds": "செலுத்தப்பட்ட நிதிகள்",
+  "pendingFunds": "நிலுவையில் உள்ள நிதிகள்",
+  "totalCollected": "மொத்த வசூல்",
+  "quickActions": "விரைவு செயல்கள்",
+  "recentActivities": "சமீபத்திய செயல்பாடுகள்",
+  "viewAll": "அனைத்தையும் காண்க",
+  "noActivities": "சமீபத்திய செயல்பாடுகள் இல்லை",
+  "activitiesWillAppear": "உங்கள் சமீபத்திய நிதி செயல்பாடுகள் இங்கே தோன்றும்"
+},
   "common": {
     "success": "வெற்றி",
     "error": "பிழை",
