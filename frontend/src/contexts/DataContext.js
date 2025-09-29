@@ -53,23 +53,32 @@ export const DataProvider = ({ children }) => {
   };
 
   // ---- Update User ----
-  const updateUser = async (id, userData) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/users/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update user");
+ // In your DataContext - updateUser function
+const updateUser = async (id, userData) => {
+  try {
+    console.log('📤 Sending update request for user:', id, 'Data:', userData);
+    
+    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
+    });
+    
+    const data = await res.json();
+    console.log('📥 Server response:', data);
+    
+    if (!res.ok) throw new Error(data.error || "Failed to update user");
 
-      setUsers((prev) => prev.map((u) => (u._id === id ? data.user : u)));
-      return data.user;
-    } catch (err) {
-      console.error("Update User Error:", err);
-      throw err;
-    }
-  };
+    // Update local state
+    setUsers((prev) => prev.map((u) => (u._id === id ? data.user : u)));
+    
+    console.log('✅ Local state updated');
+    return data.user;
+  } catch (err) {
+    console.error("Update User Error:", err);
+    throw err;
+  }
+};
 
   // ---- Delete User ----
   const deleteUser = async (id) => {

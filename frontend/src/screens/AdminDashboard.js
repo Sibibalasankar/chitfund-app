@@ -143,15 +143,20 @@ const AdminDashboard = ({ navigation }) => {
     );
   };
 
-  const toggleUserStatus = async (user) => {
-    try {
-      await updateUser(user._id, {
-        status: user.status === "active" ? "inactive" : "active",
-      });
-    } catch (err) {
-      Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
-    }
-  };
+const toggleUserStatus = async (user) => {
+  try {
+    const newStatus = user.status === "active" ? "inactive" : "active";
+    await updateUser(user._id, { status: newStatus });
+    // 🔑 removed fetchUsers()
+    Alert.alert(
+      t('admin.alerts.success'),
+      `${user.name} ${t('admin.status.updatedTo')} ${newStatus}`
+    );
+  } catch (err) {
+    Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
+  }
+};
+
 
   // --- Fund Handlers ---
   const handleAddFund = () => {

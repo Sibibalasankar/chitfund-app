@@ -30,7 +30,8 @@
       "emptyFields": "தொலைபேசி எண் மற்றும் புதிய கடவுச்சொல்லை உள்ளிடவும்",
       "somethingWrong": "ஏதோ தவறு நடந்துள்ளது"
     }
-  }, "register": {
+  },
+  "register": {
     "title": "கணக்கை உருவாக்குக",
     "subtitle": "சிட்டு பண்ட் சமூகத்தில் சேரவும்",
     "namePlaceholder": "முழுப் பெயர்",
@@ -113,18 +114,39 @@
     }
   },
   "stats": {
-  "dashboardTitle": "டாஷ்போர்டு கண்ணோட்டம்",
-  "dashboardSubtitle": "உங்கள் நிதி மேலாண்மையை கண்காணிக்கவும்",
-  "totalUsers": "மொத்த பயனர்கள்",
-  "paidFunds": "செலுத்தப்பட்ட நிதிகள்",
-  "pendingFunds": "நிலுவையில் உள்ள நிதிகள்",
-  "totalCollected": "மொத்த வசூல்",
-  "quickActions": "விரைவு செயல்கள்",
-  "recentActivities": "சமீபத்திய செயல்பாடுகள்",
-  "viewAll": "அனைத்தையும் காண்க",
-  "noActivities": "சமீபத்திய செயல்பாடுகள் இல்லை",
-  "activitiesWillAppear": "உங்கள் சமீபத்திய நிதி செயல்பாடுகள் இங்கே தோன்றும்"
-},
+    "dashboardTitle": "டாஷ்போர்டு கண்ணோட்டம்",
+    "dashboardSubtitle": "உங்கள் நிதி மேலாண்மையை கண்காணிக்கவும்",
+    "totalUsers": "மொத்த பயனர்கள்",
+    "paidFunds": "செலுத்தப்பட்ட நிதிகள்",
+    "pendingFunds": "நிலுவையில் உள்ள நிதிகள்",
+    "totalCollected": "மொத்த வசூல்",
+    "quickActions": "விரைவு செயல்கள்",
+    "recentActivities": "சமீபத்திய செயல்பாடுகள்",
+    "viewAll": "அனைத்தையும் காண்க",
+    "noActivities": "சமீபத்திய செயல்பாடுகள் இல்லை",
+    "activitiesWillAppear": "உங்கள் சமீபத்திய நிதி செயல்பாடுகள் இங்கே தோன்றும்"
+  },
+  "userForm": {
+    "addUser": "புதிய பயனரைச் சேர்க்க",
+    "editUser": "பயனரைத் திருத்து",
+    "namePlaceholder": "முழுப் பெயர்",
+    "phonePlaceholder": "மொபைல் எண் (10 இலக்கங்கள்)",
+    "roleLabel": "பங்கு",
+    "roleParticipant": "பங்கேற்பாளர்",
+    "roleAdmin": "நிர்வாகி",
+    "statusLabel": "நிலை",
+    "updateUser": "பயனரைப் புதுப்பிக்க",
+    "addUserButton": "பயனரைச் சேர்க்க"
+  },
+  "userList": {
+    "unknown": "தெரியவில்லை",
+    "notAvailable": "இல்லை",
+    "joined": "சேர்ந்தது",
+    "paid": "செலுத்தப்பட்டது",
+    "pending": "நிலுவையில்",
+    "loans": "கடன்கள்",
+    "installments": "தவணைகள்"
+  },
   "common": {
     "success": "வெற்றி",
     "error": "பிழை",

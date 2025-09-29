@@ -125,6 +125,27 @@
   "noActivities": "No Recent Activities",
   "activitiesWillAppear": "Your recent fund activities will appear here"
 },
+"userForm": {
+  "addUser": "Add New User",
+  "editUser": "Edit User",
+  "namePlaceholder": "Full Name",
+  "phonePlaceholder": "Mobile Number (10 digits)",
+  "roleLabel": "Role",
+  "roleParticipant": "Participant",
+  "roleAdmin": "Admin",
+  "statusLabel": "Status",
+  "updateUser": "Update User",
+  "addUserButton": "Add User"
+},
+"userList": {
+  "unknown": "Unknown",
+  "notAvailable": "N/A",
+  "joined": "Joined",
+  "paid": "Paid",
+  "pending": "Pending",
+  "loans": "Loans",
+  "installments": "Installments"
+},
   "common": {
     "success": "Success",
     "error": "Error",

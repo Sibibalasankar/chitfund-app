@@ -7,6 +7,7 @@ import {
   View
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTranslation } from '../../hooks/useTranslation'; // Add this import
 
 const UserList = ({
   users = [],
@@ -18,11 +19,11 @@ const UserList = ({
   onDeleteUser,
   onToggleStatus
 }) => {
+  const { t } = useTranslation(); // Add this hook
 
   const renderUserItem = ({ item }) => {
-    if (!item) return null; // Guard against undefined users
+    if (!item) return null;
 
-    // Filter valid loans/funds and ensure participantId exists
     const userLoans = (loans || []).filter(
       loan => loan?.participantId?._id === item._id || loan?.participantId === item._id
     );
@@ -44,14 +45,18 @@ const UserList = ({
         <View style={styles.itemContent}>
           {/* User Header */}
           <View style={styles.userHeader}>
-            <Text style={styles.itemTitle}>{item.name || "Unknown"}</Text>
+            <Text style={styles.itemTitle}>{item.name || t('userList.unknown')}</Text>
             <View
               style={[
                 styles.statusBadge,
                 item.status === "active" ? styles.activeBadge : styles.inactiveBadge,
               ]}
             >
-              <Text style={styles.statusText}>{item.status || "N/A"}</Text>
+              <Text style={styles.statusText}>
+                {item.status === "active" ? t('admin.status.active') :
+                  item.status === "inactive" ? t('admin.status.inactive') :
+                    t('userList.notAvailable')}
+              </Text>
             </View>
           </View>
 
@@ -59,19 +64,23 @@ const UserList = ({
           <View style={styles.userDetails}>
             <View style={styles.detailRow}>
               <Icon name="phone" size={16} color="#666" />
-              <Text style={styles.detailText}>{item.phone || "N/A"}</Text>
+              <Text style={styles.detailText}>{item.phone || t('userList.notAvailable')}</Text>
             </View>
 
             <View style={styles.detailRow}>
               <Icon name="person" size={16} color="#666" />
-              <Text style={styles.detailText}>{item.role || "N/A"}</Text>
+              <Text style={styles.detailText}>
+                {item.role === "admin" ? t('userForm.roleAdmin') :
+                  item.role === "participant" ? t('userForm.roleParticipant') :
+                    t('userList.notAvailable')}
+              </Text>
             </View>
 
             {item.joinedDate && (
               <View style={styles.detailRow}>
                 <Icon name="calendar-today" size={16} color="#666" />
                 <Text style={styles.detailText}>
-                  Joined: {new Date(item.joinedDate).toLocaleDateString()}
+                  {t('userList.joined')}: {new Date(item.joinedDate).toLocaleDateString()}
                 </Text>
               </View>
             )}
@@ -81,24 +90,29 @@ const UserList = ({
               <View style={styles.amountContainer}>
                 <Icon name="account-balance-wallet" size={16} color="#28a745" />
                 <Text style={styles.amountText}>₹{totalPaid}</Text>
-                <Text style={styles.amountLabel}>Paid</Text>
+                <Text style={styles.amountLabel}>{t('userList.paid')}</Text>
               </View>
 
               <View style={styles.amountContainer}>
                 <Icon name="pending-actions" size={16} color="#dc3545" />
                 <Text style={styles.amountText}>₹{pendingAmount}</Text>
-                <Text style={styles.amountLabel}>Pending</Text>
+                <Text style={styles.amountLabel}>{t('userList.pending')}</Text>
               </View>
             </View>
 
             {/* Loans List */}
             {userLoans.length > 0 && (
               <View style={styles.loansContainer}>
-                <Text style={styles.loansTitle}>Loans:</Text>
+                <Text style={styles.loansTitle}>{t('userList.loans')}:</Text>
                 {userLoans.map((loan) => (
                   <View key={loan._id} style={styles.loanRow}>
                     <Text style={styles.loanText}>
-                      ₹{loan.principalAmount || 0} | {loan.status || "N/A"} | Installments:{" "}
+                      ₹{loan.principalAmount || 0} |
+                      {loan.status === "active" ? t('admin.status.active') :
+                        loan.status === "pending" ? t('admin.status.pending') :
+                          loan.status === "completed" ? t('admin.status.completed') :
+                            loan.status || t('userList.notAvailable')} |
+                      {t('userList.installments')}: {" "}
                       {loan.paidInstallments || 0}/{loan.totalInstallments || 0}
                     </Text>
                   </View>
@@ -137,7 +151,7 @@ const UserList = ({
     <View style={styles.container}>
       <FlatList
         data={users || []}
-        keyExtractor={(item) => item._id?.toString() || item.id?.toString() || Math.random().toString()}
+        keyExtractor={(item) => item._id?.toString() || item.id?.toString()}
         renderItem={renderUserItem}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         style={styles.list}

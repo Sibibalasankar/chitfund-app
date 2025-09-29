@@ -227,10 +227,24 @@ app.post("/api/users", async (req, res) => {
 
 app.put("/api/users/:id", async (req, res) => {
   try {
-    const { name, phone, role, password } = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, { name, phone, role }, { new: true });
+    const { name, phone, role, password, status } = req.body;
+
+    // Include status if provided
+    const updateFields = {};
+    if (name) updateFields.name = name;
+    if (phone) updateFields.phone = phone;
+    if (role) updateFields.role = role;
+    if (status) updateFields.status = status;
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updateFields,
+      { new: true }
+    );
+
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
+    // Sync with AuthUser if phone/role/password changed
     const authUser = await AuthUser.findOne({ phone: user.phone });
     if (authUser) {
       if (password) authUser.password = password;

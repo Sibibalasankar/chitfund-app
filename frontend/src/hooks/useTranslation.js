@@ -1,8 +1,9 @@
+// hooks/useTranslation.js
 import { useLanguage } from '../contexts/LanguageContext';
 import i18n from '../locales';
 
 export const useTranslation = () => {
-  const { isLanguageReady } = useLanguage();
+  const { isLanguageReady, currentLanguage } = useLanguage();
 
   const t = (key) => {
     if (!isLanguageReady) {
@@ -66,7 +67,7 @@ export const useTranslation = () => {
         'common.error': 'Error',
         'common.back': 'Back to Login',
 
-        // --- Admin translations ---
+        // Admin translations
         'admin.dashboardTitle': 'Admin Dashboard',
         'admin.logout': 'Logout',
         'admin.logoutConfirm': 'Are you sure you want to logout?',
@@ -101,6 +102,61 @@ export const useTranslation = () => {
         'admin.status.approved': 'Approved',
         'admin.status.rejected': 'Rejected',
         'admin.status.completed': 'Completed',
+
+        // UserList translations
+        'userList.unknown': 'Unknown',
+        'userList.notAvailable': 'N/A',
+        'userList.joined': 'Joined',
+        'userList.paid': 'Paid',
+        'userList.pending': 'Pending',
+        'userList.loans': 'Loans',
+        'userList.installments': 'Installments',
+
+        // UserForm translations
+        'userForm.addUser': 'Add New User',
+        'userForm.editUser': 'Edit User',
+        'userForm.namePlaceholder': 'Full Name',
+        'userForm.phonePlaceholder': 'Mobile Number (10 digits)',
+        'userForm.roleLabel': 'Role',
+        'userForm.roleParticipant': 'Participant',
+        'userForm.roleAdmin': 'Admin',
+        'userForm.statusLabel': 'Status',
+        'userForm.updateUser': 'Update User',
+        'userForm.addUserButton': 'Add User',
+
+        // Stats translations
+        'stats.dashboardTitle': 'Dashboard Overview',
+        'stats.dashboardSubtitle': 'Track your fund management',
+        'stats.totalUsers': 'Total Users',
+        'stats.paidFunds': 'Paid Funds',
+        'stats.pendingFunds': 'Pending Funds',
+        'stats.totalCollected': 'Total Collected',
+        'stats.quickActions': 'Quick Actions',
+        'stats.recentActivities': 'Recent Activities',
+        'stats.viewAll': 'View All',
+        'stats.noActivities': 'No Recent Activities',
+        'stats.activitiesWillAppear': 'Your recent fund activities will appear here',
+
+        // Fund translations (add these for completeness)
+        'fundForm.title': 'Fund Details',
+        'fundForm.participantLabel': 'Participant',
+        'fundForm.amountLabel': 'Amount',
+        'fundForm.dueDateLabel': 'Due Date',
+        'fundForm.statusLabel': 'Status',
+        'fundForm.saveButton': 'Save Fund',
+        'fundForm.updateButton': 'Update Fund',
+
+        // Loan translations (add these for completeness)
+        'loanForm.title': 'Loan Details',
+        'loanForm.participantLabel': 'Participant',
+        'loanForm.principalAmountLabel': 'Principal Amount',
+        'loanForm.interestRateLabel': 'Interest Rate',
+        'loanForm.totalInstallmentsLabel': 'Total Installments',
+        'loanForm.paidInstallmentsLabel': 'Paid Installments',
+        'loanForm.startDateLabel': 'Start Date',
+        'loanForm.statusLabel': 'Status',
+        'loanForm.saveButton': 'Save Loan',
+        'loanForm.updateButton': 'Update Loan'
       };
 
       return fallbacks[key] || key;
@@ -108,11 +164,37 @@ export const useTranslation = () => {
 
     try {
       const result = i18n.t(key);
+      // If translation returns the key itself (meaning not found), try fallback
+      if (result === key) {
+        const fallbackKeys = {
+          'userList.unknown': 'Unknown',
+          'userList.notAvailable': 'N/A',
+          'userList.joined': 'Joined',
+          'userList.paid': 'Paid',
+          'userList.pending': 'Pending',
+          'userList.loans': 'Loans',
+          'userList.installments': 'Installments',
+          'userForm.roleAdmin': 'Admin',
+          'userForm.roleParticipant': 'Participant',
+          'admin.status.active': 'Active',
+          'admin.status.inactive': 'Inactive',
+          'admin.status.pending': 'Pending',
+          'admin.status.approved': 'Approved',
+          'admin.status.rejected': 'Rejected',
+          'admin.status.completed': 'Completed'
+        };
+        return fallbackKeys[key] || key;
+      }
       return typeof result === 'string' ? result : key;
     } catch (error) {
+      console.warn('Translation error for key:', key, error);
       return key;
     }
   };
 
-  return { t };
+  return { 
+    t, 
+    currentLanguage,
+    isLanguageReady 
+  };
 };
