@@ -457,11 +457,13 @@ const toggleUserStatus = async (user) => {
 
       case "notifications":
         return (
-          <NotificationList
-            notifications={notifications || []}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-          />
+        <NotificationList
+  notifications={notifications}
+  refreshing={refreshing}
+  onRefresh={fetchNotifications}
+  lang="ta" // "en", "ta", or "both"
+/>
+
         );
 
       default:

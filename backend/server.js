@@ -22,7 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
 /* ===========================
-   HEALTH CHECK ROUTE (Render)
+   HEALTH CHECK ROUTE
 =========================== */
 app.get("/", (req, res) => {
   res.send("✅ Chitfund Backend is running");
@@ -52,24 +52,38 @@ const fundSchema = new mongoose.Schema({
 });
 const Fund = mongoose.model("Fund", fundSchema);
 
+// 🔥 Updated bilingual Notification schema
 const notificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   phone: { type: String },
   type: { type: String, required: true },
-  message: { type: String, required: true },
+  messageEn: { type: String, required: true },
+  messageTa: { type: String, required: true },
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 const Notification = mongoose.model("Notification", notificationSchema);
 
-// ✅ Import AuthUser for login credentials
+// ✅ Import AuthUser and Loan models
 const AuthUser = require("./models/AuthUser");
 const Loan = require("./models/Loan");
+
+/* ===========================
+   NOTIFICATION HELPER
+=========================== */
+function createNotification({ userId, phone, type, messageEn, messageTa }) {
+  return Notification.create({
+    userId,
+    phone,
+    type,
+    messageEn,
+    messageTa,
+  });
+}
+
 /* ===========================
    LOAN ROUTES
 =========================== */
-
-// Loan Routes
 app.post("/api/loans", async (req, res) => {
   try {
     const { participantId, principalAmount, totalInstallments, interestRate, startDate } = req.body;
@@ -101,13 +115,14 @@ app.post("/api/loans", async (req, res) => {
     await loan.save();
     loan = await Loan.findById(loan._id).populate("participantId", "name phone");
 
-    // Create notification
+    // Create bilingual notification
     const user = await User.findById(participantId);
-    await Notification.create({
+    await createNotification({
       userId: participantId,
       phone: user.phone,
       type: "loan_added",
-      message: `New loan of ₹${principalAmount} assigned to ${user.name}.`,
+      messageEn: `New loan of ₹${principalAmount} assigned to ${user.name}.`,
+      messageTa: `புதிய கடன் ₹${principalAmount} ${user.name}க்கு வழங்கப்பட்டுள்ளது.`,
     });
 
     res.status(201).json({ success: true, loan });
@@ -116,7 +131,6 @@ app.post("/api/loans", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 app.get("/api/loans", async (req, res) => {
   try {
@@ -127,7 +141,7 @@ app.get("/api/loans", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch loans" });
   }
 });
-// In your server.js
+
 app.put("/api/loans/:id", async (req, res) => {
   try {
     const { status, paidInstallments } = req.body;
@@ -137,13 +151,9 @@ app.put("/api/loans/:id", async (req, res) => {
     if (paidInstallments !== undefined) {
       updateData.paidInstallments = paidInstallments;
       
-      // Recalculate remaining amount
       const loan = await Loan.findById(req.params.id);
       if (loan) {
-        updateData.remainingAmount = 
-          loan.installmentAmount * (loan.totalInstallments - paidInstallments);
-        
-        // Auto-update status based on payments
+        updateData.remainingAmount = loan.installmentAmount * (loan.totalInstallments - paidInstallments);
         if (paidInstallments >= loan.totalInstallments) {
           updateData.status = "paid";
         } else if (paidInstallments > 0) {
@@ -154,15 +164,10 @@ app.put("/api/loans/:id", async (req, res) => {
       }
     }
 
-    const updatedLoan = await Loan.findByIdAndUpdate(
-      req.params.id, 
-      updateData, 
-      { new: true }
-    ).populate("participantId", "name phone");
+    const updatedLoan = await Loan.findByIdAndUpdate(req.params.id, updateData, { new: true })
+      .populate("participantId", "name phone");
 
-    if (!updatedLoan) {
-      return res.status(404).json({ success: false, error: "Loan not found" });
-    }
+    if (!updatedLoan) return res.status(404).json({ success: false, error: "Loan not found" });
 
     res.json({ success: true, loan: updatedLoan });
   } catch (err) {
@@ -170,17 +175,19 @@ app.put("/api/loans/:id", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 app.delete("/api/loans/:id", async (req, res) => {
   try {
     const loan = await Loan.findByIdAndDelete(req.params.id);
     if (!loan) return res.status(404).json({ message: "Loan not found" });
 
     const user = await User.findById(loan.participantId);
-    await Notification.create({
+    await createNotification({
       userId: loan.participantId,
       phone: user.phone,
       type: "loan_deleted",
-      message: `Loan of ₹${loan.totalAmount} for ${user.name} has been deleted.`,
+      messageEn: `Loan of ₹${loan.totalAmount} for ${user.name} has been deleted.`,
+      messageTa: `₹${loan.totalAmount} கடன் ${user.name}க்கு நீக்கப்பட்டது.`,
     });
 
     res.json({ message: "Loan deleted successfully" });
@@ -214,9 +221,10 @@ app.post("/api/users", async (req, res) => {
     const user = new User({ name, phone, role: role || "participant" });
     await user.save();
 
-    await Notification.create({
+    await createNotification({
       type: "user_added",
-      message: `${user.name} has been added by admin.`,
+      messageEn: `${user.name} has been added by admin.`,
+      messageTa: `நிர்வாகி ${user.name} ஐ சேர்த்துள்ளார்.`,
     });
 
     res.status(201).json({ success: true, user });
@@ -229,22 +237,15 @@ app.put("/api/users/:id", async (req, res) => {
   try {
     const { name, phone, role, password, status } = req.body;
 
-    // Include status if provided
     const updateFields = {};
     if (name) updateFields.name = name;
     if (phone) updateFields.phone = phone;
     if (role) updateFields.role = role;
     if (status) updateFields.status = status;
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      updateFields,
-      { new: true }
-    );
-
+    const user = await User.findByIdAndUpdate(req.params.id, updateFields, { new: true });
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
-    // Sync with AuthUser if phone/role/password changed
     const authUser = await AuthUser.findOne({ phone: user.phone });
     if (authUser) {
       if (password) authUser.password = password;
@@ -262,25 +263,18 @@ app.put("/api/users/:id", async (req, res) => {
 app.delete("/api/users/:id", async (req, res) => {
   try {
     const userId = req.params.id;
-
-    // 1. Find the user first
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
-    // 2. Delete related Loans & Funds
     await Loan.deleteMany({ participantId: userId });
     await Fund.deleteMany({ participantId: userId });
-
-    // 3. Delete user login credentials
     await AuthUser.findOneAndDelete({ phone: user.phone });
-
-    // 4. Delete the User
     await user.deleteOne();
 
-    // 5. Create a notification
-    await Notification.create({
+    await createNotification({
       type: "user_deleted",
-      message: `${user.name} and all related loans/funds have been removed.`,
+      messageEn: `${user.name} and all related loans/funds have been removed.`,
+      messageTa: `${user.name} மற்றும் அனைத்து கடன்கள்/நிதிகள் நீக்கப்பட்டுள்ளன.`,
     });
 
     res.json({ success: true, message: "User and related loans/funds deleted" });
@@ -307,18 +301,17 @@ app.post("/api/funds", async (req, res) => {
     let fund = new Fund({ participantId, amount, dueDate, status: "pending" });
     await fund.save();
 
-    // Update user's pending amount
     await User.findByIdAndUpdate(participantId, { $inc: { pendingAmount: amount } });
     const user = await User.findById(participantId);
 
-    await Notification.create({
+    await createNotification({
       userId: participantId,
       phone: user.phone,
       type: "fund_added",
-      message: `New fund of ₹${amount} added for ${user.name}.`,
+      messageEn: `New fund of ₹${amount} added for ${user.name}.`,
+      messageTa: `புதிய நிதி ₹${amount} ${user.name}க்கு சேர்க்கப்பட்டது.`,
     });
 
-    // 🔥 Populate before sending back
     fund = await Fund.findById(fund._id).populate("participantId", "name phone");
 
     res.status(201).json({ success: true, fund });
@@ -327,11 +320,9 @@ app.post("/api/funds", async (req, res) => {
   }
 });
 
-
 app.put("/api/funds/:id", async (req, res) => {
   try {
     const { status, amount, dueDate } = req.body;
-
     let fund = await Fund.findById(req.params.id);
     if (!fund) return res.status(404).json({ success: false, error: "Fund not found" });
 
@@ -339,23 +330,22 @@ app.put("/api/funds/:id", async (req, res) => {
     if (amount !== undefined) fund.amount = amount;
     if (dueDate) fund.dueDate = dueDate;
 
-    if (status === "paid" && fund.status !== "paid") {
+    if (status === "paid") {
       await User.findByIdAndUpdate(fund.participantId, {
         $inc: { totalPaid: fund.amount, pendingAmount: -fund.amount },
       });
 
       const user = await User.findById(fund.participantId);
-      await Notification.create({
+      await createNotification({
         userId: fund.participantId,
         phone: user.phone,
         type: "payment_received",
-        message: `Payment of ₹${fund.amount} received from ${user.name}.`,
+        messageEn: `Payment of ₹${fund.amount} received from ${user.name}.`,
+        messageTa: `₹${fund.amount} கட்டணம் ${user.name} இலிருந்து பெறப்பட்டது.`,
       });
     }
 
     await fund.save();
-
-    // ✅ Populate before sending back
     fund = await Fund.findById(fund._id).populate("participantId", "name phone");
 
     res.json({ success: true, fund });
@@ -366,29 +356,24 @@ app.put("/api/funds/:id", async (req, res) => {
 
 app.delete("/api/funds/:id", async (req, res) => {
   try {
-    // Find the fund first
     const fund = await Fund.findById(req.params.id).populate("participantId", "name phone");
     if (!fund) return res.status(404).json({ success: false, error: "Fund not found" });
 
-    // Store fund details for notification
-    const participantName = fund.participantId?.name || "Unknown Participant";
+    const participantName = fund.participantId?.name || "Unknown";
     const participantPhone = fund.participantId?.phone || "N/A";
     const amount = fund.amount;
     const dueDate = fund.dueDate;
     const status = fund.status;
 
-    // Delete the fund
     await fund.deleteOne();
 
-    // Create a detailed notification
-    await Notification.create({
-  userId: fund.participantId?._id || null, // link to participant
-  phone: participantPhone,
-  type: "fund_deleted",
-  message: `Fund deleted: Participant: ${participantName}, Amount: ₹${amount}, Due Date: ${dueDate}, Status: ${status}`,
-  isRead: false, // mark as unread
-});
-
+    await createNotification({
+      userId: fund.participantId?._id || null,
+      phone: participantPhone,
+      type: "fund_deleted",
+      messageEn: `Fund deleted: ${participantName}, Amount: ₹${amount}, Due: ${dueDate}, Status: ${status}`,
+      messageTa: `நிதி நீக்கப்பட்டது: ${participantName}, தொகை: ₹${amount}, காலக்கெடு: ${dueDate}, நிலை: ${status}`,
+    });
 
     res.json({ success: true, message: "Fund deleted", fundId: fund._id });
   } catch (err) {
@@ -396,14 +381,27 @@ app.delete("/api/funds/:id", async (req, res) => {
   }
 });
 
-
 /* ===========================
    NOTIFICATION ROUTES
 =========================== */
 app.get("/api/notifications/:phone", async (req, res) => {
   try {
     const { phone } = req.params;
-    const notifications = await Notification.find({ phone }).sort({ createdAt: -1 });
+    const { lang } = req.query;
+
+    let notifications = await Notification.find({ phone }).sort({ createdAt: -1 });
+
+    if (lang === "en") {
+      notifications = notifications.map(n => ({ ...n.toObject(), message: n.messageEn }));
+    } else if (lang === "ta") {
+      notifications = notifications.map(n => ({ ...n.toObject(), message: n.messageTa }));
+    } else {
+      notifications = notifications.map(n => ({
+        ...n.toObject(),
+        message: `${n.messageEn}\n${n.messageTa}`,
+      }));
+    }
+
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -412,7 +410,20 @@ app.get("/api/notifications/:phone", async (req, res) => {
 
 app.get("/api/notifications", async (req, res) => {
   try {
-    const notifications = await Notification.find().sort({ createdAt: -1 });
+    const { lang } = req.query;
+    let notifications = await Notification.find().sort({ createdAt: -1 });
+
+    if (lang === "en") {
+      notifications = notifications.map(n => ({ ...n.toObject(), message: n.messageEn }));
+    } else if (lang === "ta") {
+      notifications = notifications.map(n => ({ ...n.toObject(), message: n.messageTa }));
+    } else {
+      notifications = notifications.map(n => ({
+        ...n.toObject(),
+        message: `${n.messageEn}\n${n.messageTa}`,
+      }));
+    }
+
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
