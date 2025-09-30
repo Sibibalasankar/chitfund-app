@@ -68,6 +68,8 @@ export const useTranslation = () => {
         'common.back': 'Back to Login',
         'common.confirm': 'Confirm',
         'common.delete': 'Delete',
+        'common.ok': 'OK',
+        'common.notAvailable': 'N/A',
 
         // Admin translations
         'admin.dashboardTitle': 'Admin Dashboard',
@@ -219,6 +221,36 @@ export const useTranslation = () => {
         'loanForm.validation.selectParticipant': 'Please select a participant',
         'loanForm.validation.selectStartDate': 'Please select a start date',
         'loanForm.success.paymentAdded': 'Added payment for {name}',
+
+        // Participant Dashboard translations
+        'participant.greeting': 'Welcome back',
+        'participant.accountSummary': 'Account Summary',
+        'participant.totalPaid': 'Total Paid',
+        'participant.pendingAmount': 'Pending Amount',
+        'participant.paid': 'Paid',
+        'participant.pending': 'Pending',
+        'participant.overdue': 'Overdue',
+        'participant.recentActivity': 'Recent Activity',
+        'participant.paymentCompleted': 'Payment of ₹{amount} completed',
+        'participant.fundDue': 'Fund of ₹{amount} due on {date}',
+        'participant.noRecentActivity': 'No recent activity',
+        'participant.myFunds': 'My Funds',
+        'participant.myLoans': 'My Loans',
+        'participant.due': 'Due',
+        'participant.paid': 'Paid',
+        'participant.dueDate': 'Due Date',
+        'participant.payNow': 'Pay Now',
+        'participant.payInstallment.title': 'Pay Installment',
+        'participant.payInstallment.message': 'This feature will be implemented soon. Please contact admin for payment.',
+        'participant.payInstallment.button': 'Pay Installment',
+        'participant.noFunds': 'No funds found',
+        'participant.noLoansSubtext': 'You don\'t have any active loans at the moment.',
+        'participant.noNotifications': 'No notifications',
+        'participant.markAllRead': 'Mark all read',
+        'participant.status.paid': 'paid',
+        'participant.status.pending': 'pending',
+        'participant.status.overdue': 'overdue',
+        'participant.status.partially paid': 'partially paid'
       };
 
       let translation = fallbacks[key] || key;
@@ -256,7 +288,29 @@ export const useTranslation = () => {
           'admin.status.paid': 'Paid',
           'admin.status.approved': 'Approved',
           'admin.status.rejected': 'Rejected',
-          'admin.status.completed': 'Completed'
+          'admin.status.completed': 'Completed',
+          // Participant fallbacks
+          'participant.greeting': 'Welcome back',
+          'participant.accountSummary': 'Account Summary',
+          'participant.totalPaid': 'Total Paid',
+          'participant.pendingAmount': 'Pending Amount',
+          'participant.paid': 'Paid',
+          'participant.pending': 'Pending',
+          'participant.overdue': 'Overdue',
+          'participant.recentActivity': 'Recent Activity',
+          'participant.myFunds': 'My Funds',
+          'participant.myLoans': 'My Loans',
+          'participant.due': 'Due',
+          'participant.payNow': 'Pay Now',
+          'participant.payInstallment.button': 'Pay Installment',
+          'participant.noFunds': 'No funds found',
+          'participant.noLoansSubtext': 'You don\'t have any active loans at the moment.',
+          'participant.noNotifications': 'No notifications',
+          'participant.markAllRead': 'Mark all read',
+          'participant.status.paid': 'paid',
+          'participant.status.pending': 'pending',
+          'participant.status.overdue': 'overdue',
+          'participant.status.partially paid': 'partially paid'
         };
         
         let fallback = fallbackKeys[key] || key;

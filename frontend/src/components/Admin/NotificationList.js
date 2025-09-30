@@ -3,8 +3,7 @@ import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const NotificationList = ({ notifications = [], refreshing, onRefresh, lang = 'both' }) => {
-
+const NotificationList = ({ notifications = [], refreshing, onRefresh, lang = 'en' }) => {
   const getIcon = (type) => {
     switch (type) {
       case 'payment_received': return 'account-balance-wallet';
@@ -25,32 +24,32 @@ const NotificationList = ({ notifications = [], refreshing, onRefresh, lang = 'b
     }
   };
 
-  const renderNotificationItem = ({ item }) => {
-    // Determine which message to show
-    let message = item.messageEn;
-    if (lang === 'ta') message = item.messageTa;
-    else if (lang === 'both') message = `${item.messageEn}\n${item.messageTa}`;
-
-    return (
-      <View style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}>
-        <LinearGradient
-          colors={getGradientColor(item.type)}
-          style={styles.iconContainer}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Icon name={getIcon(item.type)} size={22} color="#fff" />
-        </LinearGradient>
-
-        <View style={styles.notificationContent}>
-          <Text style={styles.notificationMessage}>{message}</Text>
-          <Text style={styles.notificationTime}>
-            {new Date(item.createdAt).toLocaleString()}
-          </Text>
-        </View>
-      </View>
-    );
+  const renderMessage = (item) => {
+    if (lang === 'en') return item.messageEn || item.message || '';
+    if (lang === 'ta') return item.messageTa || item.message || '';
+    // both
+    return `${item.messageEn || item.message || ''}\n${item.messageTa || ''}`;
   };
+
+  const renderNotificationItem = ({ item }) => (
+    <View style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}>
+      <LinearGradient
+        colors={getGradientColor(item.type)}
+        style={styles.iconContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Icon name={getIcon(item.type)} size={22} color="#fff" />
+      </LinearGradient>
+
+      <View style={styles.notificationContent}>
+        <Text style={styles.notificationMessage}>{renderMessage(item)}</Text>
+        <Text style={styles.notificationTime}>
+          {new Date(item.createdAt).toLocaleString()}
+        </Text>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>

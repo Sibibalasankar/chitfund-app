@@ -146,31 +146,31 @@ const AdminDashboard = ({ navigation }) => {
       ]
     );
   };
-const toggleUserStatus = async (user) => {
-  console.log('🔄 Toggling status for:', user.name, 'Current:', user.status);
-  
-  try {
-    const newStatus = user.status === "active" ? "inactive" : "active";
-    console.log('📝 New status will be:', newStatus);
-    
-    // Update the user status
-    await updateUser(user._id, { status: newStatus });
-    
-    // ✅ CRITICAL: Refresh the users list to get updated data
-    await fetchUsers();
-    console.log('✅ Users list refreshed');
-    
-    // Show success message with translations
-    Alert.alert(
-      t('admin.alerts.success'),
-      `${user.name} ${t('admin.status.updatedTo')} ${t('admin.status.' + newStatus)}`
-    );
-    
-  } catch (err) {
-    console.log('❌ Error updating status:', err);
-    Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
-  }
-};
+  const toggleUserStatus = async (user) => {
+    console.log('🔄 Toggling status for:', user.name, 'Current:', user.status);
+
+    try {
+      const newStatus = user.status === "active" ? "inactive" : "active";
+      console.log('📝 New status will be:', newStatus);
+
+      // Update the user status
+      await updateUser(user._id, { status: newStatus });
+
+      // ✅ CRITICAL: Refresh the users list to get updated data
+      await fetchUsers();
+      console.log('✅ Users list refreshed');
+
+      // Show success message with translations
+      Alert.alert(
+        t('admin.alerts.success'),
+        `${user.name} ${t('admin.status.updatedTo')} ${t('admin.status.' + newStatus)}`
+      );
+
+    } catch (err) {
+      console.log('❌ Error updating status:', err);
+      Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
+    }
+  };
 
 
 
@@ -457,14 +457,14 @@ const toggleUserStatus = async (user) => {
 
       case "notifications":
         return (
-        <NotificationList
-  notifications={notifications}
-  refreshing={refreshing}
-  onRefresh={fetchNotifications}
-  lang="ta" // "en", "ta", or "both"
-/>
-
+          <NotificationList
+            notifications={notifications}
+            refreshing={refreshing}
+            onRefresh={fetchNotifications}
+            lang={currentLanguage} // "en", "ta", or "both"
+          />
         );
+
 
       default:
         return null;

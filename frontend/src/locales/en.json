@@ -175,7 +175,6 @@
     "dueDate": "Due Date",
     "amount": "Amount"
   },
-  
   "loanList": {
     "noLoans": "No loans found",
     "principal": "Principal",
@@ -225,11 +224,46 @@
       "paymentAdded": "Added payment for {name}"
     }
   },
+  "participant": {
+    "greeting": "Welcome back",
+    "accountSummary": "Account Summary",
+    "totalPaid": "Total Paid",
+    "pendingAmount": "Pending Amount",
+    "paid": "Paid",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "recentActivity": "Recent Activity",
+    "paymentCompleted": "Payment of ₹{amount} completed",
+    "fundDue": "Fund of ₹{amount} due on {date}",
+    "noRecentActivity": "No recent activity",
+    "myFunds": "My Funds",
+    "myLoans": "My Loans",
+    "due": "Due",
+    "dueDate": "Due Date",
+    "payNow": "Pay Now",
+    "payInstallment": {
+      "title": "Pay Installment",
+      "message": "This feature will be implemented soon. Please contact admin for payment.",
+      "button": "Pay Installment"
+    },
+    "noFunds": "No funds found",
+    "noLoansSubtext": "You don't have any active loans at the moment.",
+    "noNotifications": "No notifications",
+    "markAllRead": "Mark all read",
+    "status": {
+      "paid": "paid",
+      "pending": "pending",
+      "overdue": "overdue",
+      "partially paid": "partially paid"
+    }
+  },
   "common": {
     "success": "Success",
     "error": "Error",
     "back": "Back to Login",
     "confirm": "Confirm",
-    "delete": "Delete"
+    "delete": "Delete",
+    "ok": "OK",
+    "notAvailable": "N/A"
   }
 }

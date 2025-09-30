@@ -1,9 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
-import { FlatList, RefreshControl, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator } from "react-native";
+import { FlatList, RefreshControl, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator, Modal, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
+import { useTranslation } from "../hooks/useTranslation";
+import { useLanguage } from "../contexts/LanguageContext";
+
+const { width } = Dimensions.get('window');
 
 const ParticipantDashboard = () => {
   const { user, logout } = useAuth();
@@ -18,9 +22,13 @@ const ParticipantDashboard = () => {
     markAllNotificationsAsRead,
   } = useData();
 
+  const { t } = useTranslation();
+  const { currentLanguage, setLanguage, availableLanguages } = useLanguage();
+  
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshing, setRefreshing] = useState(false);
   const [loanLoading, setLoanLoading] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   // Filter user-specific data
   const userFunds = funds.filter((f) => f.participantId._id === user._id && f.type !== "loan");
@@ -41,7 +49,7 @@ const ParticipantDashboard = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('common.notAvailable');
     return new Date(dateString).toLocaleDateString();
   };
 
@@ -56,10 +64,23 @@ const ParticipantDashboard = () => {
 
   const handlePayInstallment = async (loanId) => {
     Alert.alert(
-      "Pay Installment",
-      "This feature will be implemented soon. Please contact admin for payment.",
-      [{ text: "OK" }]
+      t('participant.payInstallment.title'),
+      t('participant.payInstallment.message'),
+      [{ text: t('common.ok') }]
     );
+  };
+
+  const handleLanguageChange = async (languageCode) => {
+    await setLanguage(languageCode);
+    setShowLanguageModal(false);
+  };
+
+  const getLanguageName = (code) => {
+    return code === 'en' ? 'English' : 'தமிழ்';
+  };
+
+  const getLanguageFlag = (code) => {
+    return code === 'en' ? '🇬🇧' : '🇮🇳';
   };
 
   // Render Functions
@@ -83,20 +104,20 @@ const ParticipantDashboard = () => {
               item.status === "overdue" && styles.statusOverdue,
             ]}
           />
-          <Text style={styles[item.status]}>{item.status.toUpperCase()}</Text>
+          <Text style={styles[item.status]}>{t(`participant.status.${item.status}`).toUpperCase()}</Text>
         </View>
         <Text style={styles.fundDate}>
-          Due: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : "N/A"}
+          {t('participant.due')}: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : t('common.notAvailable')}
         </Text>
         {item.paymentDate && (
           <Text style={styles.fundDate}>
-            Paid: {item.paymentDate ? new Date(item.paymentDate).toLocaleDateString() : "N/A"}
+            {t('participant.paid')}: {item.paymentDate ? new Date(item.paymentDate).toLocaleDateString() : t('common.notAvailable')}
           </Text>
         )}
       </View>
       {item.status === "pending" && (
         <TouchableOpacity style={styles.payButton}>
-          <Text style={styles.payButtonText}>Pay Now</Text>
+          <Text style={styles.payButtonText}>{t('participant.payNow')}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -107,46 +128,46 @@ const ParticipantDashboard = () => {
       <View style={styles.loanHeader}>
         <Text style={styles.loanAmount}>{formatCurrency(item.totalAmount)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{item.status}</Text>
+          <Text style={styles.statusText}>{t(`participant.status.${item.status}`)}</Text>
         </View>
       </View>
 
       <View style={styles.loanDetails}>
         <View style={styles.detailRow}>
           <Ionicons name="cash-outline" size={16} color="#666" />
-          <Text style={styles.detailText}>Principal: {formatCurrency(item.principalAmount)}</Text>
+          <Text style={styles.detailText}>{t('loanList.principal')}: {formatCurrency(item.principalAmount)}</Text>
         </View>
 
         <View style={styles.detailRow}>
           <Ionicons name="percent-outline" size={16} color="#666" />
-          <Text style={styles.detailText}>Interest: {item.interestRate}%</Text>
+          <Text style={styles.detailText}>{t('loanList.interest')}: {item.interestRate}%</Text>
         </View>
 
         <View style={styles.detailRow}>
           <Ionicons name="calendar-outline" size={16} color="#666" />
           <Text style={styles.detailText}>
-            Installments: {item.paidInstallments || 0}/{item.totalInstallments}
+            {t('loanList.installments')}: {item.paidInstallments || 0}/{item.totalInstallments}
           </Text>
         </View>
 
         <View style={styles.detailRow}>
           <Ionicons name="wallet-outline" size={16} color="#666" />
           <Text style={styles.detailText}>
-            Monthly: {formatCurrency(item.installmentAmount)}
+            {t('loanList.monthly')}: {formatCurrency(item.installmentAmount)}
           </Text>
         </View>
 
         <View style={styles.detailRow}>
           <Ionicons name="time-outline" size={16} color="#666" />
           <Text style={styles.detailText}>
-            Remaining: {formatCurrency(item.remainingAmount)}
+            {t('loanList.remaining')}: {formatCurrency(item.remainingAmount)}
           </Text>
         </View>
 
         <View style={styles.detailRow}>
           <Ionicons name="rocket-outline" size={16} color="#666" />
           <Text style={styles.detailText}>
-            Start Date: {formatDate(item.startDate)}
+            {t('loanList.startDate')}: {formatDate(item.startDate)}
           </Text>
         </View>
 
@@ -154,7 +175,7 @@ const ParticipantDashboard = () => {
           <View style={styles.detailRow}>
             <Ionicons name="alert-circle-outline" size={16} color="#666" />
             <Text style={styles.detailText}>
-              Due Date: {formatDate(item.dueDate)}
+              {t('participant.dueDate')}: {formatDate(item.dueDate)}
             </Text>
           </View>
         )}
@@ -165,7 +186,7 @@ const ParticipantDashboard = () => {
           style={styles.payButton}
           onPress={() => handlePayInstallment(item._id)}
         >
-          <Text style={styles.payButtonText}>Pay Installment</Text>
+          <Text style={styles.payButtonText}>{t('participant.payInstallment.button')}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -187,63 +208,85 @@ const ParticipantDashboard = () => {
   const overviewContent = (
     <View style={styles.overviewContainer}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome back,</Text>
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greeting}>{t('participant.greeting')},</Text>
           <Text style={styles.userName}>{user?.name}</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <Ionicons name="log-out-outline" size={24} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {/* Language Toggle Button */}
+          <TouchableOpacity 
+            style={styles.languageToggle}
+            onPress={() => setShowLanguageModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.languageFlag}>{getLanguageFlag(currentLanguage)}</Text>
+            <Text style={styles.languageCode}>{currentLanguage.toUpperCase()}</Text>
+            <Ionicons name="chevron-down" size={14} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.logoutButton} onPress={logout} activeOpacity={0.8}>
+            <Ionicons name="log-out-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.summaryCards}>
-        <View style={[styles.summaryCard, { backgroundColor: "#4CAF50" }]}>
+        <View style={[styles.summaryCard, styles.paidCard]}>
+          <View style={styles.summaryIconContainer}>
+            <Ionicons name="checkmark-circle" size={28} color="#fff" />
+          </View>
           <Text style={styles.summaryAmount}>₹{totalPaid.toLocaleString()}</Text>
-          <Text style={styles.summaryLabel}>Total Paid</Text>
+          <Text style={styles.summaryLabel}>{t('participant.totalPaid')}</Text>
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: "#FF9800" }]}>
+        <View style={[styles.summaryCard, styles.pendingCard]}>
+          <View style={styles.summaryIconContainer}>
+            <Ionicons name="time" size={28} color="#fff" />
+          </View>
           <Text style={styles.summaryAmount}>₹{pendingAmount.toLocaleString()}</Text>
-          <Text style={styles.summaryLabel}>Pending Amount</Text>
+          <Text style={styles.summaryLabel}>{t('participant.pendingAmount')}</Text>
         </View>
       </View>
 
       <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Account Summary</Text>
+        <Text style={styles.sectionTitle}>{t('participant.accountSummary')}</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <View style={[styles.statIcon, { backgroundColor: "#e0f7fa" }]}>
-              <Ionicons name="checkmark-done" size={20} color="#007bff" />
+            <View style={[styles.statIcon, { backgroundColor: "#e8f5e9" }]}>
+              <Ionicons name="checkmark-done" size={22} color="#4CAF50" />
             </View>
             <Text style={styles.statNumber}>{userFunds.filter((f) => f.status === "paid").length}</Text>
-            <Text style={styles.statLabel}>Paid</Text>
+            <Text style={styles.statLabel}>{t('participant.paid')}</Text>
           </View>
           <View style={styles.statItem}>
             <View style={[styles.statIcon, { backgroundColor: "#fff3e0" }]}>
-              <Ionicons name="time" size={20} color="#FF9800" />
+              <Ionicons name="time" size={22} color="#FF9800" />
             </View>
             <Text style={styles.statNumber}>{userFunds.filter((f) => f.status === "pending").length}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statLabel}>{t('participant.pending')}</Text>
           </View>
           <View style={styles.statItem}>
             <View style={[styles.statIcon, { backgroundColor: "#ffebee" }]}>
-              <Ionicons name="alert" size={20} color="#F44336" />
+              <Ionicons name="alert" size={22} color="#F44336" />
             </View>
             <Text style={styles.statNumber}>{userFunds.filter((f) => f.status === "overdue").length}</Text>
-            <Text style={styles.statLabel}>Overdue</Text>
+            <Text style={styles.statLabel}>{t('participant.overdue')}</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Recent Activity</Text>
+        <Text style={styles.cardTitle}>{t('participant.recentActivity')}</Text>
         {userFunds.slice(0, 3).map((f) => (
           <View key={f._id} style={styles.activityItem}>
             <View style={styles.activityDot} />
             <View style={styles.activityContent}>
               <Text style={styles.activityText}>
                 {f.status === "paid"
-                  ? `Payment of ₹${(f.amount || 0).toLocaleString()} completed`
-                  : `Fund of ₹${(f.amount || 0).toLocaleString()} due on ${f.dueDate ? new Date(f.dueDate).toLocaleDateString() : "N/A"}`}
+                  ? t('participant.paymentCompleted', { amount: (f.amount || 0).toLocaleString() })
+                  : t('participant.fundDue', { 
+                      amount: (f.amount || 0).toLocaleString(), 
+                      date: f.dueDate ? new Date(f.dueDate).toLocaleDateString() : t('common.notAvailable')
+                    })}
               </Text>
               <Text style={styles.activityTime}>
                 {new Date(f.updatedAt || f.createdAt).toLocaleDateString()}
@@ -252,7 +295,7 @@ const ParticipantDashboard = () => {
           </View>
         ))}
 
-        {userFunds.length === 0 && <Text style={styles.noDataText}>No recent activity</Text>}
+        {userFunds.length === 0 && <Text style={styles.noDataText}>{t('participant.noRecentActivity')}</Text>}
       </View>
     </View>
   );
@@ -278,7 +321,7 @@ const ParticipantDashboard = () => {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="wallet-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyStateText}>No funds found</Text>
+              <Text style={styles.emptyStateText}>{t('participant.noFunds')}</Text>
             </View>
           }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -295,9 +338,9 @@ const ParticipantDashboard = () => {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="document-text-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyStateText}>No loans found</Text>
+              <Text style={styles.emptyStateText}>{t('loanList.noLoans')}</Text>
               <Text style={styles.emptyStateSubtext}>
-                You don't have any active loans at the moment.
+                {t('participant.noLoansSubtext')}
               </Text>
             </View>
           }
@@ -314,10 +357,10 @@ const ParticipantDashboard = () => {
           renderItem={renderNotificationItem}
           ListHeaderComponent={
             <View style={styles.notificationsHeader}>
-              <Text style={styles.sectionTitle}>Notifications</Text>
+              <Text style={styles.sectionTitle}>{t('admin.tabs.notifications')}</Text>
               {userNotifications.length > 0 && (
                 <TouchableOpacity onPress={markAllNotificationsAsRead}>
-                  <Text style={styles.markAllRead}>Mark all read</Text>
+                  <Text style={styles.markAllRead}>{t('participant.markAllRead')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -325,7 +368,7 @@ const ParticipantDashboard = () => {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyStateText}>No notifications</Text>
+              <Text style={styles.emptyStateText}>{t('participant.noNotifications')}</Text>
             </View>
           }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -334,23 +377,76 @@ const ParticipantDashboard = () => {
         />
       )}
 
+      {/* Language Selection Modal */}
+      <Modal
+        visible={showLanguageModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLanguageModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Language</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            {availableLanguages.map((lang) => (
+              <TouchableOpacity
+                key={lang}
+                style={[
+                  styles.languageOption,
+                  currentLanguage === lang && styles.selectedLanguageOption
+                ]}
+                onPress={() => handleLanguageChange(lang)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.languageOptionLeft}>
+                  <Text style={styles.languageOptionFlag}>{getLanguageFlag(lang)}</Text>
+                  <View>
+                    <Text style={[
+                      styles.languageOptionText,
+                      currentLanguage === lang && styles.selectedLanguageOptionText
+                    ]}>
+                      {getLanguageName(lang)}
+                    </Text>
+                    <Text style={styles.languageOptionCode}>{lang.toUpperCase()}</Text>
+                  </View>
+                </View>
+                {currentLanguage === lang && (
+                  <View style={styles.checkmarkContainer}>
+                    <Ionicons name="checkmark-circle" size={24} color="#007bff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Bottom Tabs */}
       <View style={styles.tabBar}>
         <TouchableOpacity style={[styles.tab, activeTab === "overview" && styles.activeTab]} onPress={() => setActiveTab("overview")}>
-          <Ionicons name="home-outline" size={24} color={activeTab === "overview" ? "#007bff" : "#666"} />
-          <Text style={[styles.tabText, activeTab === "overview" && styles.activeTabText]}>Overview</Text>
+          <Ionicons name="home" size={24} color={activeTab === "overview" ? "#007bff" : "#999"} />
+          <Text style={[styles.tabText, activeTab === "overview" && styles.activeTabText]}>{t('admin.tabs.overview')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === "funds" && styles.activeTab]} onPress={() => setActiveTab("funds")}>
-          <Ionicons name="wallet-outline" size={24} color={activeTab === "funds" ? "#007bff" : "#666"} />
-          <Text style={[styles.tabText, activeTab === "funds" && styles.activeTabText]}>My Funds</Text>
+          <Ionicons name="wallet" size={24} color={activeTab === "funds" ? "#007bff" : "#999"} />
+          <Text style={[styles.tabText, activeTab === "funds" && styles.activeTabText]}>{t('participant.myFunds')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === "loans" && styles.activeTab]} onPress={() => setActiveTab("loans")}>
-          <Ionicons name="cash-outline" size={24} color={activeTab === "loans" ? "#007bff" : "#666"} />
-          <Text style={[styles.tabText, activeTab === "loans" && styles.activeTabText]}>My Loans</Text>
+          <Ionicons name="cash" size={24} color={activeTab === "loans" ? "#007bff" : "#999"} />
+          <Text style={[styles.tabText, activeTab === "loans" && styles.activeTabText]}>{t('participant.myLoans')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === "notifications" && styles.activeTab]} onPress={() => setActiveTab("notifications")}>
-          <Ionicons name="notifications-outline" size={24} color={activeTab === "notifications" ? "#007bff" : "#666"} />
-          <Text style={[styles.tabText, activeTab === "notifications" && styles.activeTabText]}>Notifications</Text>
+          <Ionicons name="notifications" size={24} color={activeTab === "notifications" ? "#007bff" : "#999"} />
+          <Text style={[styles.tabText, activeTab === "notifications" && styles.activeTabText]}>{t('admin.tabs.notifications')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -359,22 +455,177 @@ const ParticipantDashboard = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8f9fa" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 15, paddingBottom: 10 },
-  greeting: { fontSize: 16, color: "#666" },
-  userName: { fontSize: 24, fontWeight: "bold", color: "#333" },
-  logoutButton: { backgroundColor: "#F44336", width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
-  overviewContainer: { padding: 16, paddingBottom: 80 },
-  summaryCards: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
-  summaryCard: { flex: 1, marginHorizontal: 6, padding: 20, borderRadius: 16, elevation: 2 },
-  summaryAmount: { fontSize: 22, fontWeight: "bold", color: "#fff", marginBottom: 5 },
-  summaryLabel: { fontSize: 14, color: "#fff", opacity: 0.9 },
+  header: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    paddingHorizontal: width * 0.05,
+    paddingTop: 15, 
+    paddingBottom: 15,
+  },
+  greetingContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  languageToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    minWidth: 70,
+    justifyContent: 'center',
+  },
+  languageFlag: {
+    fontSize: 16,
+  },
+  languageCode: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  greeting: { fontSize: 14, color: "#666" },
+  userName: { 
+    fontSize: width < 360 ? 18 : 22, 
+    fontWeight: "bold", 
+    color: "#333",
+    flexWrap: 'wrap',
+  },
+  logoutButton: { 
+    backgroundColor: "#F44336", 
+    width: 38, 
+    height: 38, 
+    borderRadius: 19, 
+    justifyContent: "center", 
+    alignItems: "center",
+    shadowColor: '#F44336',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  selectedLanguageOption: {
+    backgroundColor: '#f0f7ff',
+  },
+  languageOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  languageOptionFlag: {
+    fontSize: 28,
+  },
+  languageOptionText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  selectedLanguageOptionText: {
+    color: '#007bff',
+    fontWeight: '700',
+  },
+  languageOptionCode: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '500',
+  },
+  checkmarkContainer: {
+    marginLeft: 10,
+  },
+
+  overviewContainer: { padding: width * 0.04, paddingBottom: 80 },
+  summaryCards: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    marginBottom: 20,
+    gap: 12,
+  },
+  summaryCard: { 
+    flex: 1, 
+    padding: width < 360 ? 16 : 20, 
+    borderRadius: 20, 
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  paidCard: {
+    backgroundColor: "#4CAF50",
+  },
+  pendingCard: {
+    backgroundColor: "#FF9800",
+  },
+  summaryIconContainer: {
+    marginBottom: 8,
+  },
+  summaryAmount: { fontSize: width < 360 ? 20 : 24, fontWeight: "bold", color: "#fff", marginBottom: 5 },
+  summaryLabel: { fontSize: 13, color: "#fff", opacity: 0.95, fontWeight: '500' },
   statsSection: { marginBottom: 20 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 15 },
   statsContainer: { flexDirection: "row", justifyContent: "space-between" },
   statItem: { alignItems: "center", flex: 1 },
-  statIcon: { width: 50, height: 50, borderRadius: 25, justifyContent: "center", alignItems: "center", marginBottom: 8 },
-  statNumber: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 4 },
-  statLabel: { fontSize: 12, color: "#666" },
+  statIcon: { width: 54, height: 54, borderRadius: 27, justifyContent: "center", alignItems: "center", marginBottom: 10 },
+  statNumber: { fontSize: 20, fontWeight: "bold", color: "#333", marginBottom: 4 },
+  statLabel: { fontSize: 11, color: "#666", textAlign: 'center' },
   card: { backgroundColor: "#fff", padding: 20, borderRadius: 16, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 15 },
   activityItem: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
@@ -400,14 +651,14 @@ const styles = StyleSheet.create({
   pending: { color: "#FF9800", fontWeight: "600", fontSize: 12 },
   overdue: { color: "#F44336", fontWeight: "600", fontSize: 12 },
   fundDate: { fontSize: 12, color: "#666" },
-  payButton: { backgroundColor: "#007bff", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 },
+  payButton: { backgroundColor: "#007bff", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   payButtonText: { color: "#fff", fontWeight: "600", fontSize: 12 },
 
   // Loans
   loansContainer: { paddingTop: 16, paddingBottom: 80 },
   loanCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
@@ -450,25 +701,58 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: "#666",
     fontSize: 14,
+    flexShrink: 1,
   },
 
   // Notifications
   notificationsContainer: { paddingTop: 16, paddingBottom: 80 },
   notificationsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
-  markAllRead: { color: "#007bff", fontWeight: "600" },
+  markAllRead: { color: "#007bff", fontWeight: "600", fontSize: 13 },
   notificationItem: { backgroundColor: "#fff", padding: 16, marginHorizontal: 16, marginBottom: 12, borderRadius: 12, flexDirection: "row", alignItems: "flex-start", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
-  unreadNotification: { backgroundColor: "#f0f7ff" },
+  unreadNotification: { backgroundColor: "#f0f7ff", borderLeftWidth: 3, borderLeftColor: "#007bff" },
   notificationContent: { flex: 1, marginLeft: 12 },
-  notificationMessage: { fontSize: 14, color: "#333", marginBottom: 4 },
+  notificationMessage: { fontSize: 14, color: "#333", marginBottom: 4, lineHeight: 20 },
   notificationTime: { fontSize: 12, color: "#666" },
   unreadIndicator: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#007bff", marginTop: 6 },
 
   // Tabs
-  tabBar: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#eee", backgroundColor: "#fff", position: "absolute", bottom: 0, left: 0, right: 0, height: 60 },
-  tab: { flex: 1, justifyContent: "center", alignItems: "center" },
-  tabText: { fontSize: 12, color: "#666", marginTop: 2 },
-  activeTab: {},
-  activeTabText: { color: "#007bff", fontWeight: "600" },
+  tabBar: { 
+    flexDirection: "row", 
+    borderTopWidth: 1, 
+    borderTopColor: "#eee", 
+    backgroundColor: "#fff", 
+    position: "absolute", 
+    bottom: 0, 
+    left: 0, 
+    right: 0, 
+    height: 60,
+    paddingBottom: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 8,
+  },
+  tab: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center",
+    paddingVertical: 5,
+  },
+  tabText: { 
+    fontSize: 10, 
+    color: "#999", 
+    marginTop: 3,
+    fontWeight: '500',
+  },
+  activeTab: {
+    borderTopWidth: 2,
+    borderTopColor: "#007bff",
+  },
+  activeTabText: { 
+    color: "#007bff", 
+    fontWeight: "700",
+  },
 
   emptyState: { 
     flex: 1, 
