@@ -31,6 +31,8 @@ app.get("/", (req, res) => {
 /* ===========================
    NOTIFICATION SERVICE - Bilingual
 =========================== */
+// In your server.js, update the NotificationService to fix the "this" binding issue:
+
 const NotificationService = {
   // Loan related notifications
   loanAdded: (userName, amount) => ({
@@ -38,10 +40,22 @@ const NotificationService = {
     tamil: `புதிய கடன் ₹${amount} ${userName}க்கு வழங்கப்பட்டது.`
   }),
 
-  loanUpdated: (userName, amount, status) => ({
-    english: `Loan of ₹${amount} for ${userName} has been ${status}.`,
-    tamil: `₹${amount} கடன் ${userName}க்கு ${this.getTamilStatus(status)}ப்பட்டது.`
-  }),
+  loanUpdated: (userName, amount, status) => {
+    const statusMap = {
+      'paid': 'செலுத்தப்பட்ட',
+      'pending': 'நிலுவையில்', 
+      'completed': 'முடிக்கப்பட்ட',
+      'updated': 'புதுப்பிக்கப்பட்ட',
+      'deleted': 'நீக்கப்பட்ட',
+      'added': 'சேர்க்கப்பட்ட'
+    };
+    const tamilStatus = statusMap[status] || status;
+    
+    return {
+      english: `Loan of ₹${amount} for ${userName} has been ${status}.`,
+      tamil: `₹${amount} கடன் ${userName}க்கு ${tamilStatus}ப்பட்டது.`
+    };
+  },
 
   loanDeleted: (userName, amount) => ({
     english: `Loan of ₹${amount} for ${userName} has been deleted.`,
@@ -54,15 +68,39 @@ const NotificationService = {
     tamil: `புதிய நிதி ₹${amount} ${userName}க்கு சேர்க்கப்பட்டது.`
   }),
 
-  fundUpdated: (userName, amount, status) => ({
-    english: `Fund of ₹${amount} for ${userName} has been ${status}.`,
-    tamil: `₹${amount} நிதி ${userName}க்கு ${this.getTamilStatus(status)}ப்பட்டது.`
-  }),
+  fundUpdated: (userName, amount, status) => {
+    const statusMap = {
+      'paid': 'செலுத்தப்பட்ட',
+      'pending': 'நிலுவையில்',
+      'completed': 'முடிக்கப்பட்ட', 
+      'updated': 'புதுப்பிக்கப்பட்ட',
+      'deleted': 'நீக்கப்பட்ட',
+      'added': 'சேர்க்கப்பட்ட'
+    };
+    const tamilStatus = statusMap[status] || status;
+    
+    return {
+      english: `Fund of ₹${amount} for ${userName} has been ${status}.`,
+      tamil: `₹${amount} நிதி ${userName}க்கு ${tamilStatus}ப்பட்டது.`
+    };
+  },
 
-  fundDeleted: (userName, amount, dueDate, status) => ({
-    english: `Fund deleted: ${userName}, Amount: ₹${amount}, Due: ${dueDate}, Status: ${status}`,
-    tamil: `நிதி நீக்கப்பட்டது: ${userName}, தொகை: ₹${amount}, காலக்கெடு: ${dueDate}, நிலை: ${this.getTamilStatus(status)}`
-  }),
+  fundDeleted: (userName, amount, dueDate, status) => {
+    const statusMap = {
+      'paid': 'செலுத்தப்பட்ட',
+      'pending': 'நிலுவையில்',
+      'completed': 'முடிக்கப்பட்ட',
+      'updated': 'புதுப்பிக்கப்பட்ட', 
+      'deleted': 'நீக்கப்பட்ட',
+      'added': 'சேர்க்கப்பட்ட'
+    };
+    const tamilStatus = statusMap[status] || status;
+    
+    return {
+      english: `Fund deleted: ${userName}, Amount: ₹${amount}, Due: ${dueDate}, Status: ${status}`,
+      tamil: `நிதி நீக்கப்பட்டது: ${userName}, தொகை: ₹${amount}, காலக்கெடு: ${dueDate}, நிலை: ${tamilStatus}`
+    };
+  },
 
   // Payment related notifications
   paymentReceived: (userName, amount) => ({
@@ -90,20 +128,7 @@ const NotificationService = {
   systemAlert: (message) => ({
     english: `System Alert: ${message}`,
     tamil: `அமைப்பு எச்சரிக்கை: ${message}`
-  }),
-
-  // Helper function to get Tamil status
-  getTamilStatus: (status) => {
-    const statusMap = {
-      'paid': 'செலுத்தப்பட்ட',
-      'pending': 'நிலுவையில்',
-      'completed': 'முடிக்கப்பட்ட',
-      'updated': 'புதுப்பிக்கப்பட்ட',
-      'deleted': 'நீக்கப்பட்ட',
-      'added': 'சேர்க்கப்பட்ட'
-    };
-    return statusMap[status] || status;
-  }
+  })
 };
 
 /* ===========================

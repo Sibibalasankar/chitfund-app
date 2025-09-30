@@ -42,6 +42,7 @@ const AdminDashboard = ({ navigation }) => {
     updateLoan,
     updateLoanStatus,
     deleteLoan,
+    markNotificationAsRead,
   } = useData();
 
   const { currentLanguage, setLanguage } = useLanguage();
@@ -81,6 +82,19 @@ const AdminDashboard = ({ navigation }) => {
   });
   const [editingLoan, setEditingLoan] = useState(null);
 
+  // --- Notification Handler ---
+  const handleNotificationPress = async (notification) => {
+    if (!notification.isRead && markNotificationAsRead) {
+      try {
+        await markNotificationAsRead(notification._id);
+        // Refresh notifications to update the read status
+        await fetchNotifications();
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+      }
+    }
+  };
+
   // --- User Handlers ---
   const handleAddUser = () => {
     setEditingUser(null);
@@ -110,16 +124,13 @@ const AdminDashboard = ({ navigation }) => {
     try {
       if (editingUser) {
         await updateUser(editingUser._id, formData);
-        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('updated', 'User'));
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('{item}', 'User'));
       } else {
         await addUser(formData);
-        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'User'));
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('{item}', 'User'));
       }
       setModalVisible(false);
-
-      // ✅ ADD THIS LINE to refresh users after adding/editing
-      await fetchUsers();
-
+      await fetchUsers(); // Refresh users list
     } catch (err) {
       Alert.alert(t('admin.alerts.error'), err.message || "Failed to save user");
     }
@@ -137,7 +148,8 @@ const AdminDashboard = ({ navigation }) => {
           onPress: async () => {
             try {
               await deleteUser(userId);
-              Alert.alert(t('admin.alerts.deleted'), `${userName} ${t('admin.alerts.deleted')}`);
+              Alert.alert(t('admin.alerts.success'), `${userName} ${t('admin.alerts.deleted')}`);
+              await fetchUsers(); // Refresh users list
             } catch (err) {
               Alert.alert(t('admin.alerts.error'), err.message || "Failed to delete user");
             }
@@ -146,33 +158,32 @@ const AdminDashboard = ({ navigation }) => {
       ]
     );
   };
-const toggleUserStatus = async (user) => {
-  console.log('🔄 Toggling status for:', user.name, 'Current:', user.status);
-  
-  try {
-    const newStatus = user.status === "active" ? "inactive" : "active";
-    console.log('📝 New status will be:', newStatus);
-    
-    // Update the user status
-    await updateUser(user._id, { status: newStatus });
-    
-    // ✅ CRITICAL: Refresh the users list to get updated data
-    await fetchUsers();
-    console.log('✅ Users list refreshed');
-    
-    // Show success message with translations
-    Alert.alert(
-      t('admin.alerts.success'),
-      `${user.name} ${t('admin.status.updatedTo')} ${t('admin.status.' + newStatus)}`
-    );
-    
-  } catch (err) {
-    console.log('❌ Error updating status:', err);
-    Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
-  }
-};
 
-
+  const toggleUserStatus = async (user) => {
+    console.log('🔄 Toggling status for:', user.name, 'Current:', user.status);
+    
+    try {
+      const newStatus = user.status === "active" ? "inactive" : "active";
+      console.log('📝 New status will be:', newStatus);
+      
+      // Update the user status
+      await updateUser(user._id, { status: newStatus });
+      
+      // Refresh the users list to get updated data
+      await fetchUsers();
+      console.log('✅ Users list refreshed');
+      
+      // Show success message with translations
+      Alert.alert(
+        t('admin.alerts.success'),
+        `${user.name} ${t('admin.status.updatedTo')} ${t('admin.status.' + newStatus)}`
+      );
+      
+    } catch (err) {
+      console.log('❌ Error updating status:', err);
+      Alert.alert(t('admin.alerts.error'), err.message || "Failed to update status");
+    }
+  };
 
   // --- Fund Handlers ---
   const handleAddFund = () => {
@@ -191,7 +202,7 @@ const toggleUserStatus = async (user) => {
     setFundFormData({
       participantId: fund.participantId?._id || fund.participantId,
       amount: fund.amount,
-      dueDate: fund.dueDate,
+      dueDate: fund.dueDate.split('T')[0], // Format date for input
       status: fund.status,
     });
     setFundModalVisible(true);
@@ -204,12 +215,13 @@ const toggleUserStatus = async (user) => {
     try {
       if (editingFund) {
         await updateFund(editingFund._id, fundFormData);
-        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('updated', 'Fund'));
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('{item}', 'Fund'));
       } else {
         await addFund(fundFormData);
-        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'Fund'));
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('{item}', 'Fund'));
       }
       setFundModalVisible(false);
+      await fetchFunds(); // Refresh funds list
     } catch (err) {
       Alert.alert(t('admin.alerts.error'), err.message || "Failed to save fund");
     }
@@ -227,7 +239,8 @@ const toggleUserStatus = async (user) => {
           onPress: async () => {
             try {
               await deleteFund(fundId);
-              Alert.alert(t('admin.alerts.deleted'), `Fund for ${participantName} ${t('admin.alerts.deleted')}`);
+              Alert.alert(t('admin.alerts.success'), `Fund for ${participantName} ${t('admin.alerts.deleted')}`);
+              await fetchFunds(); // Refresh funds list
             } catch (err) {
               Alert.alert(t('admin.alerts.error'), err.message || "Failed to delete fund");
             }
@@ -260,7 +273,7 @@ const toggleUserStatus = async (user) => {
       interestRate: loan.interestRate || 0,
       totalInstallments: loan.totalInstallments || 1,
       paidInstallments: loan.paidInstallments || 0,
-      startDate: loan.startDate || "",
+      startDate: loan.startDate ? loan.startDate.split('T')[0] : "", // Format date
       status: loan.status || "pending",
       installmentAmount: loan.installmentAmount || 0
     });
@@ -268,18 +281,19 @@ const toggleUserStatus = async (user) => {
   };
 
   const handleSaveLoan = async (loanData) => {
-    if (!loanData.participantId || loanData.principalAmount <= 0 || loanData.interestRate <= 0) {
+    if (!loanData.participantId || loanData.principalAmount <= 0) {
       return Alert.alert(t('admin.alerts.error'), t('admin.validation.fillAllFields'));
     }
     try {
       if (editingLoan) {
         await updateLoan(editingLoan._id, loanData);
-        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('updated', 'Loan'));
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.updated').replace('{item}', 'Loan'));
       } else {
         await addLoan(loanData);
-        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'Loan'));
+        Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('{item}', 'Loan'));
       }
       setLoanModalVisible(false);
+      await fetchLoans(); // Refresh loans list
     } catch (err) {
       Alert.alert(t('admin.alerts.error'), err.message || "Failed to save loan");
     }
@@ -297,7 +311,8 @@ const toggleUserStatus = async (user) => {
           onPress: async () => {
             try {
               await deleteLoan(loanId);
-              Alert.alert(t('admin.alerts.deleted'), `Loan for ${participantName} ${t('admin.alerts.deleted')}`);
+              Alert.alert(t('admin.alerts.success'), `Loan for ${participantName} ${t('admin.alerts.deleted')}`);
+              await fetchLoans(); // Refresh loans list
             } catch (err) {
               Alert.alert(t('admin.alerts.error'), err.message || "Failed to delete loan");
             }
@@ -335,6 +350,11 @@ const toggleUserStatus = async (user) => {
     user.role.toLowerCase().includes(userSearch.toLowerCase())
   );
 
+  // Get current language code for NotificationList
+  const getLanguageCode = () => {
+    return currentLanguage === "en" ? "english" : "tamil";
+  };
+
   // --- Tab Content ---
   const getActiveTabContent = () => {
     switch (activeTab) {
@@ -343,9 +363,11 @@ const toggleUserStatus = async (user) => {
           <StatsOverview
             users={users}
             funds={funds}
+            loans={loans}
             notifications={notifications}
             onAddUser={handleAddUser}
             onAddFund={handleAddFund}
+            onAddLoan={handleAddLoan}
             refreshing={refreshing}
             onRefresh={handleRefresh}
             setActiveTab={setActiveTab}
@@ -418,11 +440,13 @@ const toggleUserStatus = async (user) => {
                 try {
                   await updateFundStatus(id, status);
                   Alert.alert(t('admin.alerts.success'), `${participantName}'s fund marked as ${status}`);
+                  await fetchFunds(); // Refresh funds list
                 } catch (err) {
                   Alert.alert(t('admin.alerts.error'), err.message || "Failed to update fund");
                 }
               }}
               onEditFund={handleEditFund}
+              onDeleteFund={handleDeleteFund}
             />
           </View>
         );
@@ -447,6 +471,7 @@ const toggleUserStatus = async (user) => {
                 try {
                   await updateLoanStatus(id, status);
                   Alert.alert(t('admin.alerts.success'), `${participantName}'s loan marked as ${status}`);
+                  await fetchLoans(); // Refresh loans list
                 } catch (err) {
                   Alert.alert(t('admin.alerts.error'), err.message || "Failed to update loan");
                 }
@@ -461,6 +486,8 @@ const toggleUserStatus = async (user) => {
             notifications={notifications || []}
             refreshing={refreshing}
             onRefresh={handleRefresh}
+            language={getLanguageCode()}
+            onNotificationPress={handleNotificationPress}
           />
         );
 
@@ -487,7 +514,7 @@ const toggleUserStatus = async (user) => {
             style={styles.languageToggle}
             onPress={() => {
               const newLang = currentLanguage === "en" ? "ta" : "en";
-              setLanguage(newLang); // From useLanguage context
+              setLanguage(newLang);
             }}
             activeOpacity={0.8}
           >
@@ -599,7 +626,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
   },
-
 });
 
 export default AdminDashboard;
