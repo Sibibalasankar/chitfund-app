@@ -175,9 +175,60 @@
     "dueDate": "காலக்கெடு",
     "amount": "தொகை"
   },
+  "loanList": {
+    "noLoans": "கடன்கள் எதுவும் கிடைக்கவில்லை",
+    "principal": "அசல்",
+    "interest": "வட்டி",
+    "installments": "தவணைகள்",
+    "monthly": "மாதாந்திர",
+    "remaining": "மீதம்",
+    "startDate": "தொடக்க தேதி",
+    "addPayment": "கட்டணம் சேர்க்க",
+    "markPaid": "செலுத்தப்பட்டதாக குறிக்க",
+    "status": {
+      "paid": "செலுத்தப்பட்டது",
+      "pending": "நிலுவையில்",
+      "partiallyPaid": "பகுதியாக செலுத்தப்பட்டது"
+    }
+  },
+  "loanForm": {
+    "addTitle": "கடன் சேர்க்க",
+    "editTitle": "கடனைத் திருத்து",
+    "participantLabel": "பங்கேற்பாளர்",
+    "principalAmountLabel": "அசல் தொகை (₹)",
+    "interestRateLabel": "வட்டி விகிதம் (% வருடத்திற்கு)",
+    "totalInstallmentsLabel": "மொத்த தவணைகள்",
+    "paidInstallmentsLabel": "செலுத்தப்பட்ட தவணைகள்",
+    "startDateLabel": "தொடக்க தேதி",
+    "installmentAmountLabel": "தவணை தொகை",
+    "totalAmountLabel": "மொத்த தொகை",
+    "remainingAmountLabel": "மீதம் உள்ள தொகை",
+    "dueDateLabel": "காலக்கெடு",
+    "statusLabel": "நிலை",
+    "selectDate": "தேதியைத் தேர்ந்தெடுக்கவும்",
+    "noUsers": "பயனர்கள் இல்லை",
+    "noUsersSubtext": "கடன்களை உருவாக்குவதற்கு முன் பயனர்களைச் சேர்க்கவும்",
+    "selectedUser": "தேர்ந்தெடுக்கப்பட்டது",
+    "cancel": "ரத்து",
+    "delete": "நீக்கு",
+    "save": "சேமிக்க",
+    "update": "புதுப்பிக்க",
+    "saving": "சேமிக்கப்படுகிறது...",
+    "updating": "புதுப்பிக்கப்படுகிறது...",
+    "deleteConfirmation": "இந்த கடனை நீக்க விரும்புகிறீர்களா?",
+    "validation": {
+      "selectParticipant": "ஒரு பங்கேற்பாளரைத் தேர்ந்தெடுக்கவும்",
+      "selectStartDate": "தொடக்க தேதியைத் தேர்ந்தெடுக்கவும்"
+    },
+    "success": {
+      "paymentAdded": "{name}க்கு கட்டணம் சேர்க்கப்பட்டது"
+    }
+  },
   "common": {
     "success": "வெற்றி",
     "error": "பிழை",
-    "back": "உள்நுழைவுக்கு திரும்பு"
+    "back": "உள்நுழைவுக்கு திரும்பு",
+    "confirm": "உறுதிப்படுத்து",
+    "delete": "நீக்கு"
   }
 }

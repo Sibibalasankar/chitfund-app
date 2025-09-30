@@ -175,9 +175,61 @@
     "dueDate": "Due Date",
     "amount": "Amount"
   },
+  
+  "loanList": {
+    "noLoans": "No loans found",
+    "principal": "Principal",
+    "interest": "Interest",
+    "installments": "Installments",
+    "monthly": "Monthly",
+    "remaining": "Remaining",
+    "startDate": "Start Date",
+    "addPayment": "Add Payment",
+    "markPaid": "Mark Paid",
+    "status": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "partiallyPaid": "Partially Paid"
+    }
+  },
+  "loanForm": {
+    "addTitle": "Add Loan",
+    "editTitle": "Edit Loan",
+    "participantLabel": "Participant",
+    "principalAmountLabel": "Principal Amount (₹)",
+    "interestRateLabel": "Interest Rate (% p.a.)",
+    "totalInstallmentsLabel": "Total Installments",
+    "paidInstallmentsLabel": "Paid Installments",
+    "startDateLabel": "Start Date",
+    "installmentAmountLabel": "Installment Amount",
+    "totalAmountLabel": "Total Amount",
+    "remainingAmountLabel": "Remaining Amount",
+    "dueDateLabel": "Due Date",
+    "statusLabel": "Status",
+    "selectDate": "Select date",
+    "noUsers": "No users available",
+    "noUsersSubtext": "Please add users first before creating loans",
+    "selectedUser": "Selected",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save",
+    "update": "Update",
+    "saving": "Saving...",
+    "updating": "Updating...",
+    "deleteConfirmation": "Are you sure you want to delete this loan?",
+    "validation": {
+      "selectParticipant": "Please select a participant",
+      "selectStartDate": "Please select a start date"
+    },
+    "success": {
+      "paymentAdded": "Added payment for {name}"
+    }
+  },
   "common": {
     "success": "Success",
     "error": "Error",
-    "back": "Back to Login"
+    "back": "Back to Login",
+    "confirm": "Confirm",
+    "delete": "Delete"
   }
 }

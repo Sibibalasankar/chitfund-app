@@ -5,7 +5,7 @@ import i18n from '../locales';
 export const useTranslation = () => {
   const { isLanguageReady, currentLanguage } = useLanguage();
 
-  const t = (key) => {
+  const t = (key, params = {}) => { // Add params parameter
     if (!isLanguageReady) {
       const fallbacks = {
         // Login translations
@@ -66,6 +66,8 @@ export const useTranslation = () => {
         'common.success': 'Success',
         'common.error': 'Error',
         'common.back': 'Back to Login',
+        'common.confirm': 'Confirm',
+        'common.delete': 'Delete',
 
         // Admin translations
         'admin.dashboardTitle': 'Admin Dashboard',
@@ -173,15 +175,70 @@ export const useTranslation = () => {
         'loanForm.startDateLabel': 'Start Date',
         'loanForm.statusLabel': 'Status',
         'loanForm.saveButton': 'Save Loan',
-        'loanForm.updateButton': 'Update Loan'
+        'loanForm.updateButton': 'Update Loan',
+
+        // LoanList translations
+        'loanList.noLoans': 'No loans found',
+        'loanList.principal': 'Principal',
+        'loanList.interest': 'Interest',
+        'loanList.installments': 'Installments',
+        'loanList.monthly': 'Monthly',
+        'loanList.remaining': 'Remaining',
+        'loanList.startDate': 'Start Date',
+        'loanList.addPayment': 'Add Payment',
+        'loanList.markPaid': 'Mark Paid',
+        'loanList.status.paid': 'Paid',
+        'loanList.status.pending': 'Pending',
+        'loanList.status.partiallyPaid': 'Partially Paid',
+
+        // LoanForm translations
+        'loanForm.addTitle': 'Add Loan',
+        'loanForm.editTitle': 'Edit Loan',
+        'loanForm.participantLabel': 'Participant',
+        'loanForm.principalAmountLabel': 'Principal Amount (₹)',
+        'loanForm.interestRateLabel': 'Interest Rate (% p.a.)',
+        'loanForm.totalInstallmentsLabel': 'Total Installments',
+        'loanForm.paidInstallmentsLabel': 'Paid Installments',
+        'loanForm.startDateLabel': 'Start Date',
+        'loanForm.installmentAmountLabel': 'Installment Amount',
+        'loanForm.totalAmountLabel': 'Total Amount',
+        'loanForm.remainingAmountLabel': 'Remaining Amount',
+        'loanForm.dueDateLabel': 'Due Date',
+        'loanForm.statusLabel': 'Status',
+        'loanForm.selectDate': 'Select date',
+        'loanForm.noUsers': 'No users available',
+        'loanForm.noUsersSubtext': 'Please add users first before creating loans',
+        'loanForm.selectedUser': 'Selected',
+        'loanForm.cancel': 'Cancel',
+        'loanForm.delete': 'Delete',
+        'loanForm.save': 'Save',
+        'loanForm.update': 'Update',
+        'loanForm.saving': 'Saving...',
+        'loanForm.updating': 'Updating...',
+        'loanForm.deleteConfirmation': 'Are you sure you want to delete this loan?',
+        'loanForm.validation.selectParticipant': 'Please select a participant',
+        'loanForm.validation.selectStartDate': 'Please select a start date',
+        'loanForm.success.paymentAdded': 'Added payment for {name}',
       };
 
-      return fallbacks[key] || key;
+      let translation = fallbacks[key] || key;
+      
+      // Replace placeholders in fallback
+      Object.keys(params).forEach(param => {
+        translation = translation.replace(`{${param}}`, params[param]);
+      });
+      
+      return translation;
     }
 
     try {
-      const result = i18n.t(key);
-      // If translation returns the key itself (meaning not found), try fallback
+      let result = i18n.t(key);
+      
+      // Replace placeholders in actual translation
+      Object.keys(params).forEach(param => {
+        result = result.replace(`{${param}}`, params[param]);
+      });
+      
       if (result === key) {
         const fallbackKeys = {
           'userList.unknown': 'Unknown',
@@ -201,8 +258,17 @@ export const useTranslation = () => {
           'admin.status.rejected': 'Rejected',
           'admin.status.completed': 'Completed'
         };
-        return fallbackKeys[key] || key;
+        
+        let fallback = fallbackKeys[key] || key;
+        
+        // Replace placeholders in fallback too
+        Object.keys(params).forEach(param => {
+          fallback = fallback.replace(`{${param}}`, params[param]);
+        });
+        
+        return fallback;
       }
+      
       return typeof result === 'string' ? result : key;
     } catch (error) {
       console.warn('Translation error for key:', key, error);
