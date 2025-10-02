@@ -1,13 +1,15 @@
 import {
   FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useTranslation } from '../../hooks/useTranslation'; // Add this import
+import { useTranslation } from '../../hooks/useTranslation';
+import { useResponsive } from '../../hooks/useResponsive';
 
 const UserList = ({
   users = [],
@@ -19,7 +21,8 @@ const UserList = ({
   onDeleteUser,
   onToggleStatus
 }) => {
-  const { t } = useTranslation(); // Add this hook
+  const { t } = useTranslation();
+  const { isDesktop, webScrollProps } = useResponsive();
 
   const renderUserItem = ({ item }) => {
     if (!item) return null;
@@ -147,6 +150,26 @@ const UserList = ({
     );
   };
 
+  if (isDesktop) {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          style={[styles.list, { flex: 1, maxHeight: '100vh' }, webScrollProps.style]}
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          showsVerticalScrollIndicator={true}
+          {...webScrollProps}
+        >
+          {(users || []).map((item, index) => (
+            <View key={item._id?.toString() || item.id?.toString() || index}>
+              {renderUserItem({ item })}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+  
   return (
     <View style={styles.container}>
       <FlatList

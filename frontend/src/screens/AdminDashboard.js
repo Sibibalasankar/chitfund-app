@@ -1,12 +1,13 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTranslation } from "../hooks/useTranslation";
+import { useResponsive } from "../hooks/useResponsive";
 import { validateName, validatePhone } from "../utils/validation";
 
 import FundForm from "../components/Admin/FundForm";
@@ -46,6 +47,7 @@ const AdminDashboard = ({ navigation }) => {
 
   const { currentLanguage, setLanguage } = useLanguage();
   const { t } = useTranslation();
+  const { isDesktop, isTablet, containerWidth, getResponsivePadding, getResponsiveFontSize } = useResponsive();
 
   const [fundModalVisible, setFundModalVisible] = useState(false);
   const [fundFormData, setFundFormData] = useState({
@@ -210,8 +212,14 @@ const AdminDashboard = ({ navigation }) => {
         Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'Fund'));
       }
       setFundModalVisible(false);
+      // Refresh funds list after successful operation
+      await fetchFunds();
     } catch (err) {
-      Alert.alert(t('admin.alerts.error'), err.message || "Failed to save fund");
+      console.error('Save Fund Error:', err);
+      Alert.alert(
+        t('admin.alerts.error'), 
+        err.message || err.response?.data?.error || "Failed to save fund"
+      );
     }
   };
 
@@ -280,8 +288,14 @@ const AdminDashboard = ({ navigation }) => {
         Alert.alert(t('admin.alerts.success'), t('admin.alerts.added').replace('added', 'Loan'));
       }
       setLoanModalVisible(false);
+      // Refresh loans list after successful operation
+      await fetchLoans();
     } catch (err) {
-      Alert.alert(t('admin.alerts.error'), err.message || "Failed to save loan");
+      console.error('Save Loan Error:', err);
+      Alert.alert(
+        t('admin.alerts.error'), 
+        err.message || err.response?.data?.error || "Failed to save loan"
+      );
     }
   };
 
@@ -321,8 +335,11 @@ const AdminDashboard = ({ navigation }) => {
     try {
       await Promise.all([fetchUsers(), fetchFunds(), fetchLoans(), fetchNotifications()]);
     } catch (error) {
-      console.log("Refresh Error:", error);
-      Alert.alert(t('admin.alerts.error'), "Failed to refresh data");
+      console.error("Refresh Error:", error);
+      Alert.alert(
+        t('admin.alerts.error'), 
+        error.message || error.response?.data?.error || "Failed to refresh data"
+      );
     } finally {
       setRefreshing(false);
     }
@@ -358,6 +375,7 @@ const AdminDashboard = ({ navigation }) => {
             <TextInput
               style={styles.searchInput}
               placeholder={t('admin.search.users')}
+              placeholderTextColor="#888"
               value={userSearch}
               onChangeText={setUserSearch}
             />
@@ -482,44 +500,97 @@ const AdminDashboard = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={["#4e54c8", "#8f94fb"]} style={styles.header}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flex: 1 }}>
-          {/* Language Toggle */}
-          <TouchableOpacity
-            style={styles.languageToggle}
-            onPress={() => {
-              const newLang = currentLanguage === "en" ? "ta" : "en";
-              setLanguage(newLang); // From useLanguage context
-            }}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={["#667eea", "#764ba2"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.languageInner}
-            >
-              <Text style={styles.languageText}>{currentLanguage === "en" ? "TA" : "EN"}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+      {isDesktop ? (
+        // Desktop Layout with Sidebar
+        <View style={styles.desktopLayout}>
+          {/* Desktop Sidebar */}
+          <AdminTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            notifications={notifications}
+          />
+          
+          {/* Desktop Content Area */}
+          <View style={styles.desktopContent}>
+            {/* Desktop Header */}
+            <View style={styles.desktopHeader}>
+              <Text style={styles.desktopTitle}>{t("admin.dashboardTitle")}</Text>
+              <View style={styles.desktopHeaderActions}>
+                {/* Language Toggle */}
+                <TouchableOpacity
+                  style={styles.languageToggle}
+                  onPress={() => {
+                    const newLang = currentLanguage === "en" ? "ta" : "en";
+                    setLanguage(newLang);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={["#667eea", "#764ba2"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.languageInner}
+                  >
+                    <Text style={styles.languageText}>{currentLanguage === "en" ? "TA" : "EN"}</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
 
-          {/* Title */}
-          <Text style={styles.title}>{t("admin.dashboardTitle")}</Text>
+                {/* Logout */}
+                <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+                  <Icon name="logout" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-          {/* Logout */}
-          <TouchableOpacity onPress={handleLogout}>
-            <Icon name="logout" size={24} color="#fff" />
-          </TouchableOpacity>
+            {/* Desktop Content */}
+            <View style={styles.desktopMainContent}>
+              {getActiveTabContent()}
+            </View>
+          </View>
         </View>
-      </LinearGradient>
+      ) : (
+        // Mobile/Tablet Layout
+        <>
+          <LinearGradient colors={["#4e54c8", "#8f94fb"]} style={styles.header}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flex: 1 }}>
+              {/* Language Toggle */}
+              <TouchableOpacity
+                style={styles.languageToggle}
+                onPress={() => {
+                  const newLang = currentLanguage === "en" ? "ta" : "en";
+                  setLanguage(newLang);
+                }}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={["#667eea", "#764ba2"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.languageInner}
+                >
+                  <Text style={styles.languageText}>{currentLanguage === "en" ? "TA" : "EN"}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
 
-      <View style={styles.content}>{getActiveTabContent()}</View>
+              {/* Title */}
+              <Text style={styles.title}>{t("admin.dashboardTitle")}</Text>
 
-      <AdminTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        notifications={notifications}
-      />
+              {/* Logout */}
+              <TouchableOpacity onPress={handleLogout}>
+                <Icon name="logout" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+
+          <View style={styles.content}>{getActiveTabContent()}</View>
+
+          <AdminTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            notifications={notifications}
+          />
+        </>
+      )}
 
       <UserForm
         visible={modalVisible}
@@ -556,7 +627,52 @@ const AdminDashboard = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f0f2f5" },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#f0f2f5" 
+  },
+  
+  // Desktop Layout Styles
+  desktopLayout: {
+    flexDirection: "row",
+    flex: 1,
+  },
+  desktopContent: {
+    flex: 1,
+    backgroundColor: "#f0f2f5",
+  },
+  desktopHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  desktopTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  desktopHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  desktopMainContent: {
+    flex: 1,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  
+  // Mobile/Tablet Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -566,17 +682,35 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  title: { fontSize: 20, color: "#fff", fontWeight: "bold" },
-  content: { flex: 1 },
-  tabContent: { flex: 1, padding: 16 },
-  gradientButton: { marginBottom: 15, borderRadius: 10, overflow: "hidden" },
+  title: { 
+    fontSize: 20, 
+    color: "#fff", 
+    fontWeight: "bold" 
+  },
+  content: { 
+    flex: 1 
+  },
+  tabContent: { 
+    flex: 1, 
+    padding: 16 
+  },
+  gradientButton: { 
+    marginBottom: 15, 
+    borderRadius: 10, 
+    overflow: "hidden" 
+  },
   gradientInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
   },
-  gradientButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold", marginLeft: 8 },
+  gradientButtonText: { 
+    color: "#fff", 
+    fontSize: 16, 
+    fontWeight: "bold", 
+    marginLeft: 8 
+  },
   searchInput: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -601,7 +735,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
   },
-
+  logoutButton: {
+    backgroundColor: "#F44336",
+    padding: 8,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 
 export default AdminDashboard;

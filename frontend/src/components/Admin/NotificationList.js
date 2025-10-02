@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useResponsive } from '../../hooks/useResponsive';
 
 const NotificationList = ({ notifications = [], refreshing, onRefresh, lang = 'en' }) => {
+  const { isDesktop, webScrollProps } = useResponsive();
   const getIcon = (type) => {
     switch (type) {
       case 'payment_received': return 'account-balance-wallet';
@@ -50,6 +52,25 @@ const NotificationList = ({ notifications = [], refreshing, onRefresh, lang = 'e
       </View>
     </View>
   );
+
+  if (isDesktop) {
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          style={[{ padding: 16 }, webScrollProps.style]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#007bff']} />}
+          showsVerticalScrollIndicator={true}
+          {...webScrollProps}
+        >
+          {notifications.map((item, index) => (
+            <View key={item._id?.toString() || index}>
+              {renderNotificationItem({ item })}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

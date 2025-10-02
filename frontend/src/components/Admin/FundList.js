@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useResponsive } from '../../hooks/useResponsive';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -58,6 +59,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
   const [sortOrder, setSortOrder] = useState('desc');
   const [loadingId, setLoadingId] = useState(null);
   const { t } = useTranslation();
+  const { isDesktop, webScrollProps } = useResponsive();
 
   const displayedFunds = useMemo(() => {
     let filtered = (funds || []).filter(Boolean);
@@ -224,73 +226,114 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
     );
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Filter + Sort bar */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterSortBar}
-      >
-        <View style={styles.filterGroup}>
-          <Text style={styles.filterLabel}>{t('fundList.filter')}:</Text>
-          <View style={styles.filterButtonsContainer}>
-            {['all', 'paid', 'pending'].map(status => (
-              <TouchableOpacity
-                key={status}
-                style={[styles.filterButton, filterStatus === status && styles.filterSelected]}
-                onPress={() => setFilterStatus(status)}
-                activeOpacity={0.7}
-              >
-                <Text 
-                  style={filterStatus === status ? styles.filterTextSelected : styles.filterText}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit={true}
-                  minimumFontScale={0.8}
-                >
-                  {getFilterText(status)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.sortGroup}>
-          <Text style={styles.filterLabel}>{t('fundList.sort')}:</Text>
-          <View style={styles.sortButtonsContainer}>
-            {['recent', 'dueDate', 'amount'].map(option => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.filterButton, sortOption === option && styles.filterSelected]}
-                onPress={() => setSortOption(option)}
-                activeOpacity={0.7}
-              >
-                <Text 
-                  style={sortOption === option ? styles.filterTextSelected : styles.filterText}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit={true}
-                  minimumFontScale={0.8}
-                >
-                  {getSortText(option)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+  const FilterSortBar = () => (
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.filterSortBar}
+    >
+      <View style={styles.filterGroup}>
+        <Text style={styles.filterLabel}>{t('fundList.filter')}:</Text>
+        <View style={styles.filterButtonsContainer}>
+          {['all', 'paid', 'pending'].map(status => (
             <TouchableOpacity
-              style={styles.sortOrderButton}
-              onPress={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              key={status}
+              style={[styles.filterButton, filterStatus === status && styles.filterSelected]}
+              onPress={() => setFilterStatus(status)}
               activeOpacity={0.7}
             >
-              <Icon 
-                name={sortOrder === 'asc' ? 'arrow-upward' : 'arrow-downward'} 
-                size={18} 
-                color="#667eea" 
-              />
+              <Text 
+                style={filterStatus === status ? styles.filterTextSelected : styles.filterText}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.8}
+              >
+                {getFilterText(status)}
+              </Text>
             </TouchableOpacity>
-          </View>
+          ))}
         </View>
-      </ScrollView>
+      </View>
 
-      {/* Fund list */}
+      <View style={styles.sortGroup}>
+        <Text style={styles.filterLabel}>{t('fundList.sort')}:</Text>
+        <View style={styles.sortButtonsContainer}>
+          {['recent', 'dueDate', 'amount'].map(option => (
+            <TouchableOpacity
+              key={option}
+              style={[styles.filterButton, sortOption === option && styles.filterSelected]}
+              onPress={() => setSortOption(option)}
+              activeOpacity={0.7}
+            >
+              <Text 
+                style={sortOption === option ? styles.filterTextSelected : styles.filterText}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.8}
+              >
+                {getSortText(option)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            style={styles.sortOrderButton}
+            onPress={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            activeOpacity={0.7}
+          >
+            <Icon 
+              name={sortOrder === 'asc' ? 'arrow-upward' : 'arrow-downward'} 
+              size={18} 
+              color="#667eea" 
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const EmptyState = () => (
+    <View style={styles.emptyState}>
+      <Icon name="account-balance-wallet" size={48} color="#ccc" />
+      <Text style={styles.emptyStateText}>
+        {t('fundList.noFunds') || 'No funds found'}
+      </Text>
+    </View>
+  );
+
+  if (isDesktop) {
+    return (
+      <View style={styles.container}>
+        <FilterSortBar />
+        <ScrollView
+          style={[styles.listContent, webScrollProps.style]}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              colors={['#667eea']} 
+              tintColor="#667eea"
+            />
+          }
+          showsVerticalScrollIndicator={true}
+          {...webScrollProps}
+        >
+          {displayedFunds.length === 0 ? (
+            <EmptyState />
+          ) : (
+            displayedFunds.map((item, index) => (
+              <View key={item?._id?.toString() || item?.id?.toString() || index}>
+                {renderFundItem({ item })}
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <FilterSortBar />
       <FlatList
         data={displayedFunds}
         keyExtractor={(item) => item?._id?.toString() || item?.id?.toString() || Math.random().toString()}
@@ -305,14 +348,7 @@ const FundList = ({ funds = [], refreshing, onRefresh, onUpdateStatus, onEditFun
         }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Icon name="account-balance-wallet" size={48} color="#ccc" />
-            <Text style={styles.emptyStateText}>
-              {t('fundList.noFunds') || 'No funds found'}
-            </Text>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState />}
       />
     </View>
   );

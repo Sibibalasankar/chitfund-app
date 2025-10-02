@@ -31,6 +31,23 @@
       "somethingWrong": "Something went wrong"
     }
   },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Create a new secure password",
+    "formTitle": "Enter New Password",
+    "newPasswordPlaceholder": "New Password",
+    "confirmPasswordPlaceholder": "Confirm New Password",
+    "resetButton": "Reset Password",
+    "success": "Password reset successfully",
+    "validation": {
+      "passwordRequired": "Password is required",
+      "invalidPassword": "Password must be at least 6 characters",
+      "passwordsNotMatch": "Passwords do not match"
+    },
+    "errors": {
+      "somethingWrong": "Something went wrong"
+    }
+  },
   "register": {
     "title": "Create Account",
     "subtitle": "Join the Chit Fund community",
@@ -138,8 +155,19 @@
     "roleAdmin": "Admin",
     "statusLabel": "Status",
     "updateUser": "Update User",
-    "addUserButton": "Add User"
+    "addUserButton": "Add User",
+    "updatingUser": "Updating...",
+    "addingUser": "Adding...",
+    "pickFromContacts": "Pick from Contacts"
   },
+  "contactPicker": {
+  "title": "Select a Contact",
+  "searchPlaceholder": "Search contacts...",
+  "close": "Close",
+  "noContacts": "No contacts found",
+  "permissionDenied": "Permission denied",
+  "permissionMessage": "Contacts access is required"
+},
   "userList": {
     "unknown": "Unknown",
     "notAvailable": "N/A",

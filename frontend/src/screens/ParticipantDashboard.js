@@ -1,13 +1,42 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
-import { FlatList, RefreshControl, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator, Modal, Dimensions } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { 
+  FlatList, 
+  RefreshControl, 
+  StatusBar, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  Alert, 
+  ActivityIndicator, 
+  Modal, 
+  Dimensions,
+  Platform,
+  SafeAreaView
+} from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
 import { useTranslation } from "../hooks/useTranslation";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useResponsive } from "../hooks/useResponsive";
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// Helper to detect devices with bottom navigation bars
+const hasBottomNavigationBar = () => {
+  return Platform.OS === 'android' && Platform.Version >= 29; // Android 10+ usually have gesture bars
+};
+
+// Simplified tab bar height calculation
+const getTabBarHeight = () => {
+  const baseHeight = 70;
+  const extraPadding = Platform.OS === 'ios' 
+    ? (height > 800 ? 20 : 10) // iPhone notch/home indicator
+    : (hasBottomNavigationBar() ? 15 : 5); // Android navigation bar
+  
+  return baseHeight + extraPadding;
+};
 
 const ParticipantDashboard = () => {
   const { user, logout } = useAuth();
@@ -24,6 +53,7 @@ const ParticipantDashboard = () => {
 
   const { t } = useTranslation();
   const { currentLanguage, setLanguage, availableLanguages } = useLanguage();
+  const { isDesktop, isTablet, getResponsivePadding, getResponsiveFontSize, getCardWidth, getGridColumns } = useResponsive();
   
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshing, setRefreshing] = useState(false);
@@ -83,7 +113,14 @@ const ParticipantDashboard = () => {
     return code === 'en' ? '🇬🇧' : '🇮🇳';
   };
 
-  // Render Functions
+  // Use the simplified tab bar height calculation
+  const tabBarHeight = getTabBarHeight();
+
+  const getContentPadding = () => {
+    return tabBarHeight + 10;
+  };
+
+  // Render Functions (same as before)
   const renderFundItem = ({ item }) => (
     <View
       style={[
@@ -213,7 +250,6 @@ const ParticipantDashboard = () => {
           <Text style={styles.userName}>{user?.name}</Text>
         </View>
         <View style={styles.headerActions}>
-          {/* Language Toggle Button */}
           <TouchableOpacity 
             style={styles.languageToggle}
             onPress={() => setShowLanguageModal(true)}
@@ -230,15 +266,15 @@ const ParticipantDashboard = () => {
         </View>
       </View>
 
-      <View style={styles.summaryCards}>
-        <View style={[styles.summaryCard, styles.paidCard]}>
+      <View style={[styles.summaryCards, isDesktop && styles.desktopSummaryCards]}>
+        <View style={[styles.summaryCard, styles.paidCard, isDesktop && styles.desktopSummaryCard]}>
           <View style={styles.summaryIconContainer}>
             <Ionicons name="checkmark-circle" size={28} color="#fff" />
           </View>
           <Text style={styles.summaryAmount}>₹{totalPaid.toLocaleString()}</Text>
           <Text style={styles.summaryLabel}>{t('participant.totalPaid')}</Text>
         </View>
-        <View style={[styles.summaryCard, styles.pendingCard]}>
+        <View style={[styles.summaryCard, styles.pendingCard, isDesktop && styles.desktopSummaryCard]}>
           <View style={styles.summaryIconContainer}>
             <Ionicons name="time" size={28} color="#fff" />
           </View>
@@ -249,7 +285,7 @@ const ParticipantDashboard = () => {
 
       <View style={styles.statsSection}>
         <Text style={styles.sectionTitle}>{t('participant.accountSummary')}</Text>
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, isDesktop && styles.desktopStatsContainer]}>
           <View style={styles.statItem}>
             <View style={[styles.statIcon, { backgroundColor: "#e8f5e9" }]}>
               <Ionicons name="checkmark-done" size={22} color="#4CAF50" />
@@ -274,7 +310,7 @@ const ParticipantDashboard = () => {
         </View>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, isDesktop && styles.desktopCard]}>
         <Text style={styles.cardTitle}>{t('participant.recentActivity')}</Text>
         {userFunds.slice(0, 3).map((f) => (
           <View key={f._id} style={styles.activityItem}>
@@ -301,7 +337,7 @@ const ParticipantDashboard = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
 
       {activeTab === "overview" && (
@@ -310,6 +346,7 @@ const ParticipantDashboard = () => {
           ListHeaderComponent={overviewContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: getContentPadding() }}
         />
       )}
 
@@ -325,7 +362,11 @@ const ParticipantDashboard = () => {
             </View>
           }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          contentContainerStyle={[styles.fundsContainer, userFunds.length === 0 && styles.emptyContainer]}
+          contentContainerStyle={[
+            styles.fundsContainer, 
+            userFunds.length === 0 && styles.emptyContainer,
+            { paddingBottom: getContentPadding() }
+          ]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -345,7 +386,11 @@ const ParticipantDashboard = () => {
             </View>
           }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          contentContainerStyle={[styles.loansContainer, userLoans.length === 0 && styles.emptyContainer]}
+          contentContainerStyle={[
+            styles.loansContainer, 
+            userLoans.length === 0 && styles.emptyContainer,
+            { paddingBottom: getContentPadding() }
+          ]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -372,7 +417,11 @@ const ParticipantDashboard = () => {
             </View>
           }
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          contentContainerStyle={[styles.notificationsContainer, userNotifications.length === 0 && styles.emptyContainer]}
+          contentContainerStyle={[
+            styles.notificationsContainer, 
+            userNotifications.length === 0 && styles.emptyContainer,
+            { paddingBottom: getContentPadding() }
+          ]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -431,22 +480,45 @@ const ParticipantDashboard = () => {
       </Modal>
 
       {/* Bottom Tabs */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity style={[styles.tab, activeTab === "overview" && styles.activeTab]} onPress={() => setActiveTab("overview")}>
+      <View style={[styles.tabBar, { height: tabBarHeight }]}>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === "overview" && styles.activeTab]} 
+          onPress={() => setActiveTab("overview")}
+        >
           <Ionicons name="home" size={24} color={activeTab === "overview" ? "#007bff" : "#999"} />
-          <Text style={[styles.tabText, activeTab === "overview" && styles.activeTabText]}>{t('admin.tabs.overview')}</Text>
+          <Text style={[styles.tabText, activeTab === "overview" && styles.activeTabText]}>
+            {t('admin.tabs.overview')}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === "funds" && styles.activeTab]} onPress={() => setActiveTab("funds")}>
+        
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === "funds" && styles.activeTab]} 
+          onPress={() => setActiveTab("funds")}
+        >
           <Ionicons name="wallet" size={24} color={activeTab === "funds" ? "#007bff" : "#999"} />
-          <Text style={[styles.tabText, activeTab === "funds" && styles.activeTabText]}>{t('participant.myFunds')}</Text>
+          <Text style={[styles.tabText, activeTab === "funds" && styles.activeTabText]}>
+            {t('participant.myFunds')}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === "loans" && styles.activeTab]} onPress={() => setActiveTab("loans")}>
+        
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === "loans" && styles.activeTab]} 
+          onPress={() => setActiveTab("loans")}
+        >
           <Ionicons name="cash" size={24} color={activeTab === "loans" ? "#007bff" : "#999"} />
-          <Text style={[styles.tabText, activeTab === "loans" && styles.activeTabText]}>{t('participant.myLoans')}</Text>
+          <Text style={[styles.tabText, activeTab === "loans" && styles.activeTabText]}>
+            {t('participant.myLoans')}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === "notifications" && styles.activeTab]} onPress={() => setActiveTab("notifications")}>
+        
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === "notifications" && styles.activeTab]} 
+          onPress={() => setActiveTab("notifications")}
+        >
           <Ionicons name="notifications" size={24} color={activeTab === "notifications" ? "#007bff" : "#999"} />
-          <Text style={[styles.tabText, activeTab === "notifications" && styles.activeTabText]}>{t('admin.tabs.notifications')}</Text>
+          <Text style={[styles.tabText, activeTab === "notifications" && styles.activeTabText]}>
+            {t('admin.tabs.notifications')}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -454,7 +526,10 @@ const ParticipantDashboard = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8f9fa" },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#f8f9fa" 
+  },
   header: { 
     flexDirection: "row", 
     justifyContent: "space-between", 
@@ -591,12 +666,18 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 
-  overviewContainer: { padding: width * 0.04, paddingBottom: 80 },
+  overviewContainer: { 
+    padding: width * 0.04, 
+  },
   summaryCards: { 
     flexDirection: "row", 
     justifyContent: "space-between", 
     marginBottom: 20,
     gap: 12,
+  },
+  desktopSummaryCards: {
+    justifyContent: "flex-start",
+    gap: 20,
   },
   summaryCard: { 
     flex: 1, 
@@ -607,6 +688,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
+  },
+  desktopSummaryCard: {
+    flex: 0,
+    width: 200,
+    padding: 24,
   },
   paidCard: {
     backgroundColor: "#4CAF50",
@@ -622,11 +708,19 @@ const styles = StyleSheet.create({
   statsSection: { marginBottom: 20 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 15 },
   statsContainer: { flexDirection: "row", justifyContent: "space-between" },
+  desktopStatsContainer: {
+    justifyContent: "flex-start",
+    gap: 20,
+  },
   statItem: { alignItems: "center", flex: 1 },
   statIcon: { width: 54, height: 54, borderRadius: 27, justifyContent: "center", alignItems: "center", marginBottom: 10 },
   statNumber: { fontSize: 20, fontWeight: "bold", color: "#333", marginBottom: 4 },
   statLabel: { fontSize: 11, color: "#666", textAlign: 'center' },
   card: { backgroundColor: "#fff", padding: 20, borderRadius: 16, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  desktopCard: {
+    maxWidth: 600,
+    padding: 24,
+  },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 15 },
   activityItem: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
   activityDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#007bff", marginRight: 12, marginTop: 6 },
@@ -636,7 +730,7 @@ const styles = StyleSheet.create({
   noDataText: { textAlign: "center", color: "#999", fontStyle: "italic", marginVertical: 10 },
 
   // Funds
-  fundsContainer: { paddingTop: 16, paddingBottom: 80 },
+  fundsContainer: { paddingTop: 16 },
   fundItem: { flexDirection: "row", backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, marginHorizontal: 16, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
   paidItem: { borderLeftWidth: 4, borderLeftColor: "#4CAF50" },
   pendingItem: { borderLeftWidth: 4, borderLeftColor: "#FF9800" },
@@ -655,7 +749,7 @@ const styles = StyleSheet.create({
   payButtonText: { color: "#fff", fontWeight: "600", fontSize: 12 },
 
   // Loans
-  loansContainer: { paddingTop: 16, paddingBottom: 80 },
+  loansContainer: { paddingTop: 16 },
   loanCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -705,7 +799,7 @@ const styles = StyleSheet.create({
   },
 
   // Notifications
-  notificationsContainer: { paddingTop: 16, paddingBottom: 80 },
+  notificationsContainer: { paddingTop: 16 },
   notificationsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
   markAllRead: { color: "#007bff", fontWeight: "600", fontSize: 13 },
   notificationItem: { backgroundColor: "#fff", padding: 16, marginHorizontal: 16, marginBottom: 12, borderRadius: 12, flexDirection: "row", alignItems: "flex-start", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
@@ -715,7 +809,7 @@ const styles = StyleSheet.create({
   notificationTime: { fontSize: 12, color: "#666" },
   unreadIndicator: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#007bff", marginTop: 6 },
 
-  // Tabs
+  // Tabs - Updated for better navigation bar compatibility
   tabBar: { 
     flexDirection: "row", 
     borderTopWidth: 1, 
@@ -724,12 +818,11 @@ const styles = StyleSheet.create({
     position: "absolute", 
     bottom: 0, 
     left: 0, 
-    right: 0, 
-    height: 60,
-    paddingBottom: 5,
+    right: 0,
+    paddingBottom: Platform.OS === 'ios' ? (height > 800 ? 20 : 10) : 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 8,
   },
@@ -737,13 +830,14 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: "center", 
     alignItems: "center",
-    paddingVertical: 5,
+    paddingVertical: 8,
   },
   tabText: { 
     fontSize: 10, 
     color: "#999", 
-    marginTop: 3,
+    marginTop: 4,
     fontWeight: '500',
+    textAlign: 'center',
   },
   activeTab: {
     borderTopWidth: 2,

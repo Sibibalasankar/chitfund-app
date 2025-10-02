@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { useForm } from '../hooks/useForm';
+import { useResponsive } from '../hooks/useResponsive';
 import { validatePassword, validatePhone } from '../utils/validation';
 
 const LoginScreen = ({ navigation }) => {
@@ -24,6 +25,7 @@ const LoginScreen = ({ navigation }) => {
   const { login, isLoading } = useAuth();
   const { currentLanguage, setLanguage, isLanguageReady } = useLanguage();
   const { t } = useTranslation();
+  const { isDesktop, isTablet, screenWidth, containerWidth } = useResponsive();
 
   const validate = (values) => {
     const errors = {};
@@ -83,142 +85,327 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{t('login.title')}</Text>
-          <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
-        </View>
+        {isDesktop ? (
+          // Desktop Layout
+          <View style={styles.desktopLayout}>
+            <View style={styles.desktopLeft}>
+              <View style={styles.header}>
+                <Text style={styles.title}>{t('login.title')}</Text>
+                <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.desktopRight}>
+              <View style={styles.formContainer}>
+                <Text style={styles.formTitle}>{t('login.formTitle')}</Text>
 
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>{t('login.formTitle')}</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.phone && touched.phone && styles.inputError,
+                    ]}
+                    placeholder={t('login.mobileNumber')}
+                    placeholderTextColor="#888"
+                    value={values.phone}
+                    onChangeText={formatPhoneInput}
+                    onBlur={() => handleBlur('phone')}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                  />
+                  {errors.phone && touched.phone && (
+                    <Text style={styles.errorText}>{errors.phone}</Text>
+                  )}
+                </View>
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[
-                styles.input,
-                errors.phone && touched.phone && styles.inputError,
-              ]}
-              placeholder={t('login.mobileNumber')}
-              placeholderTextColor="#888"
-              value={values.phone}
-              onChangeText={formatPhoneInput}
-              onBlur={() => handleBlur('phone')}
-              keyboardType="phone-pad"
-              maxLength={10}
-            />
-            {errors.phone && touched.phone && (
-              <Text style={styles.errorText}>{errors.phone}</Text>
-            )}
+                <View style={styles.inputContainer}>
+                  <View style={styles.passwordWrapper}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder={t('login.password')}
+                      placeholderTextColor="#888"
+                      value={values.password}
+                      onChangeText={(value) => handleChange('password', value)}
+                      onBlur={() => handleBlur('password')}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
+                      <Ionicons
+                        name={showPassword ? 'eye-off' : 'eye'}
+                        size={22}
+                        color="#007bff"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.password && touched.password && (
+                    <Text style={styles.errorText}>{errors.password}</Text>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.loginButton,
+                    isLoggingIn && styles.loginButtonDisabled,
+                  ]}
+                  onPress={handleLogin}
+                  disabled={isLoggingIn}
+                >
+                  {isLoggingIn ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text style={styles.loginButtonText}>
+                      {t('login.loginButton')}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={() => navigation.navigate('ForgotPassword')}
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    {t('login.forgotPassword')}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={styles.languageContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.languageButton,
+                      currentLanguage === 'en' && styles.languageButtonActive
+                    ]}
+                    onPress={() => setLanguage('en')}
+                  >
+                    <Text style={[
+                      styles.languageText,
+                      currentLanguage === 'en' && styles.languageTextActive
+                    ]}>
+                      English
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.languageButton,
+                      currentLanguage === 'ta' && styles.languageButtonActive
+                    ]}
+                    onPress={() => setLanguage('ta')}
+                  >
+                    <Text style={[
+                      styles.languageText,
+                      currentLanguage === 'ta' && styles.languageTextActive
+                    ]}>
+                      தமிழ்
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View
+                  style={[
+                    styles.registerSection,
+                    currentLanguage === 'ta' && styles.registerSectionTamil
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.registerText,
+                      currentLanguage === 'ta' && { marginRight: 0, marginBottom: 5 }
+                    ]}
+                  >
+                    {t('login.noAccount')}
+                  </Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                    <Text style={styles.registerLink}>
+                      {t('login.signUp')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
           </View>
+        ) : (
+          // Mobile/Tablet Layout
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>{t('login.title')}</Text>
+              <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
+            </View>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.passwordWrapper}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder={t('login.password')}
-                placeholderTextColor="#888"
-                value={values.password}
-                onChangeText={(value) => handleChange('password', value)}
-                onBlur={() => handleBlur('password')}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={22}
-                  color="#007bff"
+            <View style={styles.formContainer}>
+              <Text style={styles.formTitle}>{t('login.formTitle')}</Text>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.phone && touched.phone && styles.inputError,
+                  ]}
+                  placeholder={t('login.mobileNumber')}
+                  placeholderTextColor="#888"
+                  value={values.phone}
+                  onChangeText={formatPhoneInput}
+                  onBlur={() => handleBlur('phone')}
+                  keyboardType="phone-pad"
+                  maxLength={10}
                 />
+                {errors.phone && touched.phone && (
+                  <Text style={styles.errorText}>{errors.phone}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <View style={styles.passwordWrapper}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder={t('login.password')}
+                    placeholderTextColor="#888"
+                    value={values.password}
+                    onChangeText={(value) => handleChange('password', value)}
+                    onBlur={() => handleBlur('password')}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
+                    <Ionicons
+                      name={showPassword ? 'eye-off' : 'eye'}
+                      size={22}
+                      color="#007bff"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password && touched.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.loginButton,
+                  isLoggingIn && styles.loginButtonDisabled,
+                ]}
+                onPress={handleLogin}
+                disabled={isLoggingIn}
+              >
+                {isLoggingIn ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.loginButtonText}>
+                    {t('login.loginButton')}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={() => navigation.navigate('ForgotPassword')}
+              >
+                <Text style={styles.forgotPasswordText}>
+                  {t('login.forgotPassword')}
+                </Text>
               </TouchableOpacity>
             </View>
-            {errors.password && touched.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
-          </View>
 
-          <TouchableOpacity
-            style={[
-              styles.loginButton,
-              isLoggingIn && styles.loginButtonDisabled,
-            ]}
-            onPress={handleLogin}
-            disabled={isLoggingIn}
-          >
-            {isLoggingIn ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.loginButtonText}>
-                {t('login.loginButton')}
+            <View style={styles.languageContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.languageButton,
+                  currentLanguage === 'en' && styles.languageButtonActive
+                ]}
+                onPress={() => setLanguage('en')}
+              >
+                <Text style={[
+                  styles.languageText,
+                  currentLanguage === 'en' && styles.languageTextActive
+                ]}>
+                  English
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.languageButton,
+                  currentLanguage === 'ta' && styles.languageButtonActive
+                ]}
+                onPress={() => setLanguage('ta')}
+              >
+                <Text style={[
+                  styles.languageText,
+                  currentLanguage === 'ta' && styles.languageTextActive
+                ]}>
+                  தமிழ்
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={[
+                styles.registerSection,
+                currentLanguage === 'ta' && styles.registerSectionTamil
+              ]}
+            >
+              <Text
+                style={[
+                  styles.registerText,
+                  currentLanguage === 'ta' && { marginRight: 0, marginBottom: 5 }
+                ]}
+              >
+                {t('login.noAccount')}
               </Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => navigation.navigate('ForgotPassword')}
-          >
-            <Text style={styles.forgotPasswordText}>
-              {t('login.forgotPassword')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.languageContainer}>
-          <TouchableOpacity
-            style={[
-              styles.languageButton,
-              currentLanguage === 'en' && styles.languageButtonActive
-            ]}
-            onPress={() => setLanguage('en')}
-          >
-            <Text style={[
-              styles.languageText,
-              currentLanguage === 'en' && styles.languageTextActive
-            ]}>
-              English
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.languageButton,
-              currentLanguage === 'ta' && styles.languageButtonActive
-            ]}
-            onPress={() => setLanguage('ta')}
-          >
-            <Text style={[
-              styles.languageText,
-              currentLanguage === 'ta' && styles.languageTextActive
-            ]}>
-              தமிழ்
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.registerSection}>
-          <Text style={styles.registerText}>
-            {t('login.noAccount')}
-          </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.registerLink}>
-              {t('login.signUp')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.registerLink}>
+                  {t('login.signUp')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  scrollContent: { flexGrow: 1 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f5f5f5' 
+  },
+  scrollContent: { 
+    flexGrow: 1 
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
   },
-  loadingText: { marginTop: 10, color: '#666' },
+  loadingText: { 
+    marginTop: 10, 
+    color: '#666' 
+  },
+  
+  // Desktop Layout Styles
+  desktopLayout: {
+    flexDirection: 'row',
+    minHeight: '100vh',
+    backgroundColor: '#f5f5f5',
+  },
+  desktopLeft: {
+    flex: 1,
+    backgroundColor: '#007bff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  desktopRight: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    backgroundColor: '#f5f5f5',
+  },
+  
+  // Mobile/Tablet Header
   header: {
     backgroundColor: '#007bff',
     padding: 30,
@@ -227,8 +414,18 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     alignItems: 'center',
   },
-  title: { fontSize: 32, fontWeight: 'bold', color: 'white', marginBottom: 10 },
-  subtitle: { fontSize: 16, color: 'rgba(255, 255, 255, 0.8)' },
+  title: { 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    color: 'white', 
+    marginBottom: 10 
+  },
+  subtitle: { 
+    fontSize: 16, 
+    color: 'rgba(255, 255, 255, 0.8)' 
+  },
+  
+  // Form Container
   formContainer: {
     padding: 20,
     marginTop: -20,
@@ -240,6 +437,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minWidth: 300,
+    maxWidth: 400,
   },
   formTitle: {
     fontSize: 20,
@@ -248,7 +447,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     color: '#333',
   },
-  inputContainer: { marginBottom: 15 },
+  inputContainer: { 
+    marginBottom: 15 
+  },
   input: {
     height: 50,
     borderColor: '#ddd',
@@ -259,8 +460,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
-  inputError: { borderColor: '#dc3545' },
-  errorText: { color: '#dc3545', fontSize: 12, marginTop: 5, marginLeft: 5 },
+  inputError: { 
+    borderColor: '#dc3545' 
+  },
+  errorText: { 
+    color: '#dc3545', 
+    fontSize: 12, 
+    marginTop: 5, 
+    marginLeft: 5 
+  },
   loginButton: {
     height: 50,
     backgroundColor: '#007bff',
@@ -269,10 +477,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 15,
   },
-  loginButtonDisabled: { backgroundColor: '#6c757d' },
-  loginButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  forgotPassword: { alignItems: 'center' },
-  forgotPasswordText: { color: '#007bff', fontSize: 14 },
+  loginButtonDisabled: { 
+    backgroundColor: '#6c757d' 
+  },
+  loginButtonText: { 
+    color: 'white', 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
+  forgotPassword: { 
+    alignItems: 'center' 
+  },
+  forgotPasswordText: { 
+    color: '#007bff', 
+    fontSize: 14 
+  },
   registerSection: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -281,8 +500,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 30,
   },
-  registerText: { color: '#666', marginRight: 5 },
-  registerLink: { color: '#007bff', fontWeight: 'bold' },
+  registerSectionTamil: {
+    flexDirection: 'column', // stacked vertically in Tamil
+  },
+  registerText: {
+    color: '#666',
+    marginRight: 5,
+    textAlign: 'center',
+  },
+  registerLink: {
+    color: '#007bff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',

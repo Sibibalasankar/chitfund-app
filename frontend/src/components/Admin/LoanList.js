@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import {
   FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,6 +11,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useTranslation } from '../../hooks/useTranslation';
+import { useResponsive } from '../../hooks/useResponsive';
 
 const LoanList = ({
   loans = [],
@@ -21,6 +23,7 @@ const LoanList = ({
 }) => {
   const [refreshing, setRefreshing] = useState(false);
   const { t } = useTranslation();
+  const { isDesktop, webScrollProps } = useResponsive();
 
   const formatCurrency = (amount) => `₹${(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatDate = (date) => {
@@ -195,6 +198,38 @@ const LoanList = ({
     );
   };
 
+  const EmptyState = () => (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIconContainer}>
+        <Icon name="inventory-2" size={48} color="#ccc" />
+      </View>
+      <Text style={styles.emptyTitle}>{t('loanList.noLoans')}</Text>
+      <Text style={styles.emptySubtitle}>Get started by creating your first loan record</Text>
+    </View>
+  );
+
+  if (isDesktop) {
+    return (
+      <ScrollView
+        style={[styles.listContainer, webScrollProps.style]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        {...webScrollProps}
+      >
+        {Array.isArray(loans) && loans.length > 0 ? (
+          loans.map((item, index) => (
+            <View key={item?._id?.toString() || index.toString()}>
+              {renderLoanItem({ item })}
+            </View>
+          ))
+        ) : (
+          <EmptyState />
+        )}
+      </ScrollView>
+    );
+  }
+
   return (
     <FlatList
       data={Array.isArray(loans) ? loans : []}
@@ -204,15 +239,7 @@ const LoanList = ({
       contentContainerStyle={styles.listContainer}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      ListEmptyComponent={
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
-            <Icon name="inventory-2" size={48} color="#ccc" />
-          </View>
-          <Text style={styles.emptyTitle}>{t('loanList.noLoans')}</Text>
-          <Text style={styles.emptySubtitle}>Get started by creating your first loan record</Text>
-        </View>
-      }
+      ListEmptyComponent={<EmptyState />}
     />
   );
 };

@@ -31,6 +31,23 @@
       "somethingWrong": "ஏதோ தவறு நடந்துள்ளது"
     }
   },
+  "resetPassword": {
+    "title": "கடவுச்சொல்லை மீட்டமைக்க",
+    "subtitle": "புதிய பாதுகாப்பான கடவுச்சொல்லை உருவாக்கவும்",
+    "formTitle": "புதிய கடவுச்சொல்லை உள்ளிடவும்",
+    "newPasswordPlaceholder": "புதிய கடவுச்சொல்",
+    "confirmPasswordPlaceholder": "புதிய கடவுச்சொல்லை உறுதிப்படுத்துக",
+    "resetButton": "கடவுச்சொல்லை மீட்டமைக்க",
+    "success": "கடவுச்சொல் வெற்றிகரமாக மீட்டமைக்கப்பட்டது",
+    "validation": {
+      "passwordRequired": "கடவுச்சொல் தேவை",
+      "invalidPassword": "கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்",
+      "passwordsNotMatch": "கடவுச்சொற்கள் பொருந்தவில்லை"
+    },
+    "errors": {
+      "somethingWrong": "ஏதோ தவறு நடந்துள்ளது"
+    }
+  },
   "register": {
     "title": "கணக்கை உருவாக்குக",
     "subtitle": "சிட்டு பண்ட் சமூகத்தில் சேரவும்",
@@ -132,14 +149,25 @@
     "addUser": "புதிய பயனரைச் சேர்க்க",
     "editUser": "பயனரைத் திருத்து",
     "namePlaceholder": "முழுப் பெயர்",
-    "phonePlaceholder": "மொபைல் எண் (10 இலக்கங்கள்)",
+    "phonePlaceholder": "மொபைல் எண் ",
     "roleLabel": "பங்கு",
     "roleParticipant": "பங்கேற்பாளர்",
     "roleAdmin": "நிர்வாகி",
     "statusLabel": "நிலை",
     "updateUser": "பயனரைப் புதுப்பிக்க",
-    "addUserButton": "பயனரைச் சேர்க்க"
+    "addUserButton": "பயனரைச் சேர்க்க",
+    "updatingUser": "புதுப்பிக்கப்படுகிறது...",
+    "addingUser": "சேர்க்கப்படுகிறது...",
+    "pickFromContacts": "தொடர்புகளிலிருந்து தேர்ந்தெடுக்கவும்"
   },
+  "contactPicker": {
+  "title": "ஒரு தொடர்பைத் தேர்ந்தெடுக்கவும்",
+  "searchPlaceholder": "தொடர்புகளைத் தேடுங்கள்...",
+  "close": "மூடு",
+  "noContacts": "தொடர்புகள் எதுவும் கிடைக்கவில்லை",
+  "permissionDenied": "அனுமதி மறுக்கப்பட்டது",
+  "permissionMessage": "தொடர்புகள் அணுகல் தேவை"
+},
   "userList": {
     "unknown": "தெரியவில்லை",
     "notAvailable": "இல்லை",

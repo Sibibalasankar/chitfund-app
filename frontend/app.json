@@ -44,7 +44,8 @@
       ],
       "expo-font",
       "expo-asset",
-      "expo-localization"
+      "expo-localization",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -53,8 +54,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "acb5f68a-dfd8-4f56-8c2e-44b28d69686c"
+        "projectId": "356d0b82-1aec-4a6e-8890-d950f9639140"
       }
-    }
+    },
+    "owner": "chitfund2025"
   }
 }

@@ -126,9 +126,13 @@ export const DataProvider = ({ children }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(fundData),
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: Failed to add fund`);
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add fund");
-
       setFunds((prev) => [...prev, data.fund]);
       return data.fund;
     } catch (err) {
@@ -145,9 +149,13 @@ export const DataProvider = ({ children }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: Failed to update fund`);
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update fund");
-
       setFunds((prev) => prev.map((f) => (f._id === id ? data.fund : f)));
       return data.fund;
     } catch (err) {
@@ -165,9 +173,13 @@ export const DataProvider = ({ children }) => {
   const deleteFund = async (id) => {
     try {
       const res = await fetch(`${API_BASE_URL}/funds/${id}`, { method: "DELETE" });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: Failed to delete fund`);
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to delete fund");
-
       setFunds((prev) => prev.filter((f) => f._id !== id));
       return data;
     } catch (err) {
@@ -184,7 +196,11 @@ export const DataProvider = ({ children }) => {
         : `${API_BASE_URL}/notifications`;
 
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch notifications");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: Failed to fetch notifications`);
+      }
+      
       const data = await res.json();
       setNotifications(data);
       return data;
@@ -201,9 +217,13 @@ export const DataProvider = ({ children }) => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: Failed to mark notification as read`);
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to mark notification as read");
-
       setNotifications((prev) =>
         prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
       );

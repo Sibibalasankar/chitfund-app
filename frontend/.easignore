@@ -1,41 +1,39 @@
-# Node modules
+# Dependencies
 node_modules/
 
-# Android build outputs
-android/.gradle/
-android/app/build/
-android/build/
-android/local.properties
-android/.cxx/
-android/.idea/
+# Build folders (CRITICAL - these should be excluded)
+android/
+ios/
+dist/
+build/
+*.tar.gz
+*.tgz
 
-# iOS build outputs
-ios/build/
-ios/Pods/
-ios/*.xcworkspace
-ios/*.xcuserdata
-ios/.idea/
-
-# Git & IDE
-.git/
-.vscode/
-.cursor/
-.idea/
-
-# Expo
+# Development
 .expo/
 .expo-shared/
-dist/
-web-build/
-
-# Logs
+.git/
 *.log
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-
-# Archives
-*.tar.gz
-*.zip
 *.tmp
-*.cache
+.vscode/
+.cursor/
+
+# Cache files
+.cache/
+tmp/
+temp/
+
+# Environment
+.env*.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# System
+.DS_Store
+Thumbs.db
+
+# Large assets (keep this)
+assets/videos/
